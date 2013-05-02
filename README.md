@@ -21,10 +21,6 @@ Artful.ly Open Source Engine is a Rails Engine.  **It is not intended to be moun
 
 Master is the current development branch.  Every effort is made to make master tidy and working at all times but it is the edge and problems do happen.  For any stable production applications, you'll *absolutely* want to be pointing to a published, stable gem.  A list can be found [on Rubygems](https://rubygems.org/gems/artfully_ose)
 
-## Contributing
-
-This is coming soon, we promise.
-
 ## Contributors
 
 Gary Moore - Lead Developer at Fractured Atlas
