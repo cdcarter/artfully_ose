@@ -2,6 +2,9 @@
 %html{:xmlns => "http://www.w3.org/1999/xhtml", "xml:lang" => "en", :lang => "en"}
   %head
     %title= "#{yield :title} : #{t 'artfully.page_title'}"
+    :plain
+      <link href='http://fonts.googleapis.com/css?family=Open+Sans+Condensed:300' rel='stylesheet' type='text/css'>
+      <link href='http://fonts.googleapis.com/css?family=Sanchez' rel='stylesheet' type='text/css'>
     = favicon_link_tag
     = stylesheet_link_tag "bootstrap", :media => :all
     = stylesheet_link_tag "application"
@@ -9,7 +12,7 @@
     = render 'layouts/custom_css_includes'
     = csrf_meta_tag
     = render :partial => 'layouts/google_analytics'
-  %body
+  %body{'data-controller' => controller.controller_path, 'data-action' => controller.action_name}
     = render :partial => 'layouts/menu'
     .container
       #heading= yield :header

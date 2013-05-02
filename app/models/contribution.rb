@@ -123,18 +123,19 @@ class Contribution
   end
 
   def build_action
-    params = {
-      :subtype => @subtype,
-      :occurred_at => @occurred_at,
-      :details => @details
-    }
     person = Person.find(@person_id)
-    action = Action.create_of_type("give")
-    action.set_params(params, person)
+    action = GiveAction.for_organization(self.organization)
+
+    action.occurred_at = @occurred_at
+    action.subtype = @subtype
+    action.details = @details
+
+    action.person = person
+    action.subject = person
+    
     action.creator_id = @creator_id
     action.subject = @order
-    action.organization_id = @organization_id
-    return action
+    action
   end
 
   def build_order(order_klass = ApplicationOrder)

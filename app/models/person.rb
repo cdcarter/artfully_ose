@@ -1,9 +1,11 @@
 class Person < ActiveRecord::Base
   include Valuation::LifetimeValue
   include Valuation::LifetimeDonations
+  include OhNoes::Destroy
 
   attr_accessor :skip_sync_to_mailchimp, :skip_commit
-  attr_accessible :type, :email, :salutation, :title, :dummy, :first_name, :last_name, :company_name, :website, :twitter_handle, :linked_in_url, :facebook_url, :person_type
+  attr_accessible :type, :email, :salutation, :dummy, :title, :first_name, :last_name, :company_name, :website, :twitter_handle, :linked_in_url, :facebook_url, :person_type, :address_attributes, :phones_attributes
+
   attr_accessible :subscribed_lists, :do_not_email, :skip_sync_to_mailchimp
   attr_accessible :organization_id
   
@@ -16,7 +18,10 @@ class Person < ActiveRecord::Base
   has_many    :notes
   has_many    :orders
   has_many    :tickets, :foreign_key => 'buyer_id'
-  has_one     :address
+  has_one     :address, :validate => false
+
+  accepts_nested_attributes_for :address, :allow_destroy => false
+  accepts_nested_attributes_for :phones, :reject_if => lambda { |p| p[:number].blank? }, :allow_destroy => true
   
   default_scope where(:deleted_at => nil)
   before_save :check_do_not_email
@@ -25,15 +30,7 @@ class Person < ActiveRecord::Base
   validates_presence_of :organization_id
   validates_presence_of :person_info
 
-  validates :email, :uniqueness => { :scope => [:organization_id, :deleted_at] }, :allow_blank => true
-
-  def destroy!
-    destroy
-  end
-
-  def destroy
-    update_column(:deleted_at, Time.now)
-  end
+  validates :email, :uniqueness => { :scope => [:organization_id, :deleted_at], :message => " %{value} has already been taken." }, :allow_blank => true
   
   def dupe_code
     "#{first_name} | #{last_name} | #{email}"
@@ -51,6 +48,10 @@ class Person < ActiveRecord::Base
       end
     end
     hash
+  end
+
+  def posessive
+    self.first_name.blank? ? "" : "#{self.first_name}'s"
   end
   
   #
@@ -71,6 +72,10 @@ class Person < ActiveRecord::Base
     actions.empty? && phones.empty? && notes.empty? && orders.empty? && tickets.empty? && address.nil? && import_id.nil?
   end
 
+  def destroyable?
+    actions.empty? && orders.empty? && tickets.empty?
+  end
+
   searchable do
     text :first_name, :last_name, :email
     text :address do
@@ -82,7 +87,7 @@ class Person < ActiveRecord::Base
     end
     
     text :notes do
-      notes.map{ |note| note.text }
+      notes.map{ |note| note.text }.join(" ")
     end
     
     string :first_name, :last_name, :email
@@ -155,12 +160,16 @@ class Person < ActiveRecord::Base
     new_lists = loser.subscribed_lists - winner.subscribed_lists
     winner.subscribed_lists = winner.subscribed_lists.concat(loser.subscribed_lists).uniq
     winner.save!
-    loser.destroy!
+    loser.destroy(with_prejudice: true)
 
     mailchimp_kit = winner.organization.kits.mailchimp
     MailchimpSyncJob.merged_person(mailchimp_kit, loser.email, winner.id, new_lists) if mailchimp_kit
 
     return winner
+  end
+
+  def lifetime_ticket_value
+    self.lifetime_value - self.lifetime_donations
   end
   
   def self.find_by_email_and_organization(email, organization)

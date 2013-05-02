@@ -1,7 +1,3 @@
-#
-# This is the donation represented in a user's cart.  
-# This is NOT the persisted item that is attached to the order
-#
 class Donation < ActiveRecord::Base
   include Itemable
   belongs_to :cart
@@ -17,6 +13,10 @@ class Donation < ActiveRecord::Base
 
   def self.fee
     0 # $0 fee
+  end
+
+  def order_summary_description
+    "Donation"
   end
 
   def expired?

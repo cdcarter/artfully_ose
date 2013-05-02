@@ -1,46 +1,47 @@
 - in_section :dashboard
 
-- content_for :header do
-  %h1 Dashboard
-
 = render :partial => 'layouts/admin_messages'
 
 .row
   .span4
-    %section
-      %h3 My Organization
-      %p
-        - if current_user.is_in_organization?
-          =link_to current_user.current_organization.name, organization_path(current_user.current_organization)
-        - else
-          You are not in an organization yet.  Ask your organization administrator to add you, or
-          =link_to "create your own.", new_organization_path
+    .well
+      .row-fluid
+        .span4
+          = gravatar_image_tag(current_user.email, :alt => 'User icon', :class => 'dashboard-grav', :gravatar => { :size => 64 })
+        .span8
+          - if current_user.is_in_organization?          
+            %b= current_user.email
+            = link_to "Account Administration", organization_path(current_user.current_organization)
+            = link_to "Sign Out", destroy_user_session_path
+          - else
+            You are not in an organization yet.  Ask your organization administrator to add you, or
+            =link_to "create your own.", new_organization_path
 
-    %section
-      %h3 Recent Activity
-      - if @recent_actions.blank?
-        %p= t(".no-actions", :default => "When someone buys a ticket, makes a donation, or updates a record, it will be noted here. Get started by adding some new contacts to your People database.")
-        = link_to "Add a Contact", new_person_path, :class => 'btn'
-      - else
-        %ul#recent-list
-          - @recent_actions.each do |action|
-            %li.row-fluid
-              .span2
-                = image_tag "actions/#{action.action_type.downcase}.png"
-              .span10
-                =link_to_person (action.person)
-                =action.sentence
-                .muted="#{time_ago_in_words(action.occurred_at)} ago"
+    %h3 Events
+    - unless @events.blank?
+      %ul#event-list.row-fluid
+        - @events.each do |event|
+          %li.row-fluid.event-list-item{:style => "margin-left: 0px; margin-right:10px'"}
+            .span12
+              .row-fluid
+                .span4.event-icon-container
+                  = render :partial => 'shared/event_image_icon', :locals => { :event => event }
+                .span8
+                  %h4= link_to event.name, event_path(event), :title => 'event-name'
+                  %ul.mini-stats
+                    %li= "#{number_as_cents(event.glance.sales_played)} total played"
+                    %li= "#{number_as_cents(event.glance.sales_advance)} advance sales"
+
+    -if @events.blank?
+      .no-image#add-a-description
+        #text
+          =link_to 'Create a new event', new_event_path
+          %p
+            Creating an event is the first step toward scheduling shows and selling tickets. 
+    -else
+      = link_to "Create Event", new_event_path, :class => "btn btn-primary"
+      %span.pull-right
+        =icon_link_to("View All Events", events_path, 'icon-arrow-right', 'btn', '')
 
   .span8
-    %section
-
-      -if @ticket_offers
-        = render :partial => "ticket_offers/list", :locals => { :ticket_offers => @ticket_offers }
-
-      %h3 Events
-      = render :partial => 'events/list', :locals => { :events => @events }
-      = link_to "Create New Event", new_event_path, :class => "btn btn-primary"
-      .pull-right
-        - unless @events.blank?
-          =icon_link_to("View All Events", events_path, 'icon-arrow-right', 'btn', '')
+    =render :partial => 'recent_activity'

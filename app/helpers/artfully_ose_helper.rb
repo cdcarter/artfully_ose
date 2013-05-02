@@ -25,6 +25,16 @@ module ArtfullyOseHelper
     channel.to_s.humanize
   end
   
+  def build_action_path(target, action)
+    action_path_name = action.new_record? ? "actions" : "actions"
+    "#{target.class.name.downcase}_#{action_path_name}_path"
+  end
+
+  def time_ago_sentence(t)
+    qualifier = t > Time.now ? "from now" : "ago"
+    "#{time_ago_in_words(t)} #{qualifier}"
+  end
+
   #
   # For use with the nav-pills to select an intem based on a current selection
   # Will protect against nil by using try on the object
@@ -36,14 +46,6 @@ module ArtfullyOseHelper
     selected_object.try(:id) == menu_object.id ? "active" : "unselected"
   end
   
-  def full_details(action)
-    s = truncate(action.full_details, :length => 100, :separator => ' ', :omission => '...')
-    if action.subject.is_a? Order
-      s = s + " <a href='#{order_path(action.subject)}'><i class='icon-share-alt'></i></a>"
-    end
-    s.html_safe
-  end
-  
   #For use with Bootstraps icon %i classes
   def icon_link_to(text, href, icon, class_names, id, html_attributes={})
     s = "<a href='#{href}' class='#{class_names}' id='#{id}' "
@@ -52,12 +54,6 @@ module ArtfullyOseHelper
     end
     s = s + "><i class='#{icon}'></i> #{text}</a>"
     s.html_safe
-  end
-  
-  def action_and_subtype(action)
-    s = "#{action.action_type.capitalize}"
-    s = s + " - #{action.subtype}" unless action.subtype.nil?
-    s
   end
   
   #
@@ -121,7 +117,7 @@ module ArtfullyOseHelper
   end
 
   def sorted_us_state_names
-    @sorted_us_states ||= us_states.sort{|a, b| a <=> b}
+    @sorted_us_state_names ||= us_states.keys.sort{|a, b| a <=> b}
   end
 
   def sorted_us_state_abbreviations

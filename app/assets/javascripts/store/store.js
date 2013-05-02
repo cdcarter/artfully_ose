@@ -1,4 +1,10 @@
 $(document).ready(function(){
+  hookupAddToCart()
+
+  $(document).locationSelector({
+    'countryField' : '#payment_customer_address_country', 
+    'regionField'  : '#payment_customer_address_state'
+  });
 
   // show/hide extended event descriptions
   $('.truncated a.toggle, .not-truncated a.toggle').click(function(e) {
@@ -18,32 +24,37 @@ $(document).ready(function(){
 
   // when calendar is clicked
   $('td.has_show').click(function() {
-    $("ul#shows li").hide();
+    var loadingMessage = $('#loading-container #loading')
+    var errorMessage = $('#loading-container #error')
     var date = $(this).attr('data-date');
-    $("ul#shows li[data-date='" + date + "']").show();
-    $("ul#shows li[data-date='" + date + "'] .title").addClass('active');
-    $("ul#shows li[data-date='" + date + "'] .sections").show();
+    var targetLi = $("ul#shows li[data-date='" + date + "']");
+    var showUuid = targetLi.attr('data-show-uuid');
+
+    targetLi.hide();
+
+    $.ajax({
+      url: "/store/shows/" + showUuid,
+      beforeSend: function ( xhr ) {
+        //can't use show() because it starts out hidden and show() won't work with that
+        errorMessage.css('display', 'none')
+        loadingMessage.css('visibility', 'visible')
+        
+        $("ul#shows li").parent().attr('style','opacity:.4')
+      }
+    }).done(function ( data ) {
+      loadingMessage.css('visibility', 'hidden')
+      $("ul#shows li").parent().attr('style','opacity:1')
+      $("ul#shows li").hide();  
+      targetLi.html(data);  
+      targetLi.fadeIn('slow'); 
+      hookupAddToCart();
+    }).error(function ( data ) {
+      loadingMessage.css('visibility', 'hidden')
+      errorMessage.css('display', 'block')
+      errorMessage.css('visibility', 'visible')
+    });
   });
 
-  // click "add to cart" button on tickets
-  $('.add-tickets-to-cart').submit(function(e) {
-    e.preventDefault();
-    $('#shopping-cart #steps').slideDown(); // not sure why this isn't slideUp
-
-    // show the cart tab
-    switchTabs('#cart');
-
-    params = {
-      sectionId:   $(this).find('#section_id').val(),
-      showId:      $(this).find('#show_id').val(),
-      sectionName: $(this).find('#section_name').val(),
-      ticketCount: parseInt($(this).find('#ticket_count').val(), 10),
-      ticketPrice: parseFloat($(this).find('#ticket_price').val()),
-      showingName: $(this).find('#showing_name').val()
-    };
-
-    addItemToCart('ticket', params);
-  });
 
   // click "make donation" button on donation
   $('.add-donation-to-cart').submit(function(e) {
@@ -122,6 +133,28 @@ $(document).ready(function(){
     updateOrderOnServer();
   });
 });
+
+var hookupAddToCart = function() {
+  // click "add to cart" button on tickets
+  $('.add-tickets-to-cart').submit(function(e) {
+    e.preventDefault();
+    $('#shopping-cart #steps').slideDown(); // not sure why this isn't slideUp
+
+    // show the cart tab
+    switchTabs('#cart');
+
+    params = {
+      sectionId:   $(this).find('#section_id').val(),
+      showId:      $(this).find('#show_id').val(),
+      sectionName: $(this).find('#section_name').val(),
+      ticketCount: parseInt($(this).find('#ticket_count').val(), 10),
+      ticketPrice: parseFloat($(this).find('#ticket_price').val()),
+      showingName: $(this).find('#showing_name').val()
+    };
+
+    addItemToCart('ticket', params);
+  });
+}
 
 var nextButtonIsDisabled = function(sectionId){
   return $(sectionId+' form-actions a').hasClass('disabled');

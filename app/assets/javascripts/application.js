@@ -1,6 +1,7 @@
 //= require jquery
 //= require jquery_ujs
 //= require jquery-lib
+//= require locationselector
 //= require_directory ./custom
 //= require bootstrap
 //= require_self
@@ -68,6 +69,26 @@ function setFlashMessage(msg) {
 	}
 }
 
+function bindEditOrderLink() {
+  $("#edit-order-link, .edit-order-link").bind("ajax:complete", function(et, e){
+    $("#edit-order-popup").html(e.responseText);
+    $("#edit-order-popup").modal( "show" );
+    activateControls();
+    touchCurrency();
+    return false;
+  });
+}
+
+function singleShot() {
+  $(".single-shot").parents("form").submit(function(){
+    $(this).find(".single-shot").attr('disabled','disabled');
+  });
+}
+
+function returnFalse() {
+  return false;
+}
+
 $(document).ready(function() {
     
 	/*********** NEW BOOTSTRAP JS ***********/
@@ -86,11 +107,16 @@ $(document).ready(function() {
 	$('.dropdown-toggle').dropdown();
 	
 	$('#nag').modal('show');
-  $('.artfully-tooltip').tooltip()
-	
-	/*********** NEW ARTFULLY JS ************/
+  $('.artfully-tooltip').tooltip();
 	
 	/*********** EXISTING ARTFUL.LY JS ******/
+
+  singleShot();
+
+  $(document).locationSelector({
+    'countryField' : '#person_address_attributes_country',
+    'regionField'  : '#person_address_attributes_state'
+  });
 
   $("form .description").siblings("input").focusin(function(){
     $("form .description").addClass("active");
@@ -155,26 +181,100 @@ $(document).ready(function() {
     return false;
   });
 
-  $("#hear-action-link,.edit-action-link").bind("ajax:complete", function(et, e){
-    $("#hear-action-modal").html(e.responseText);
-    $("#hear-action-modal").modal( "show" );
+  $("#bulk-action-link").bind("ajax:complete", function(et, e){
+    $("#bulk-action-modal").html(e.responseText);
+    $("#bulk-action-modal").modal( "show" );
     activateControls();
     return false;
   });
 
-  $("#edit-order-link").bind("ajax:complete", function(et, e){
-    $("#edit-order-popup").html(e.responseText);
-    $("#edit-order-popup").modal( "show" );
-    activateControls();
-		touchCurrency();
+  $('.new-action-save').click(returnFalse())
+  $('.action-type-button').click(function(){
+    $('.new-action-save').off();
+  })
+
+  $(".new-action-link").click(function(){
+    $('.new-action-form').toggle();
     return false;
   });
 
-  $(".new-note-link,.edit-note-link").bind("ajax:complete", function(et, e){
-    $("#new-note-popup").html(e.responseText);
-    $("#new-note-popup").modal( "show" );
-    activateControls();
+  $('.action-type button').click(function() {
+    type = $(this).attr('data-action-type');
+    form = $(this).parents('form');
+    $('#action_type').val(type);
+    $('#artfully_action_details').attr('placeholder', $(this).attr('data-details-placeholder'));
+    $("#artfully_action_details").removeAttr("disabled");
+    var subtypes = eval($(this).attr('data-subtypes'));
+    $('#artfully_action_subtype').empty();
+
+    if (subtypes.length > 0) {
+      $('#artfully_action_subtype').show();
+      $.each(subtypes, function(index, value) {   
+        $('#artfully_action_subtype')
+          .append($("<option></option>")
+          .attr("value",value)
+          .text(value));
+      });
+    } else {
+      $('#artfully_action_subtype').hide();
+    }
+
+    if (type === 'give') {
+      form.find('.dollar-inputs').show();
+    } else {
+      form.find('.dollar-inputs').hide();
+    }
+
+    $('#artfully_action_details').focus();
+    return true;
+  })
+
+  bindEditOrderLink()
+
+  $(".edit-note-link").click(function(){
+    $(this).parents('tr').find('td').hide();
+    $(this).parents('tr').find('.edit-note-form').show();
+    $(this).parents('tr').find('.edit-note-form textarea').focus();
     return false;
+  });
+
+  $(".new-note-link").click(function(){
+    $('.new-note-form').toggle();
+    $('.new-note-form textarea').focus();
+    return false;
+  });
+
+  $('table#notes-list').on("click", 'td.toggle-truncated .truncated, td.toggle-truncated .not-truncated', function(event) {
+    $(this).parent().find('div').toggle();
+  })
+
+  $('table#action-list').on("click", 'td.toggle-truncated .truncated, td.toggle-truncated .not-truncated', function(event) {
+    $(this).parent().find('div').toggle();
+    bindEditOrderLink()
+  })
+
+  $('table#action-list').on("click", 'a.edit-action-link', function(event) {
+    event.stopPropagation(); // dont toggle truncated
+    event.preventDefault();  // dont follow link
+    $(this).parents('tr').find('td').hide();
+    $(this).parents('tr').find('.edit-action-form').show();
+    $(this).parents('tr').find('.edit-action-form textarea').focus();
+  })
+
+  $('.action-form').on("click", 'a.action-form-cancel-link', function(event) {
+    $(this).parents('tr').find('td').show();
+    $(this).parents('.action-form').hide();
+    $(this).parents('.modal').modal( "hide" );
+    return false;
+  })
+
+  $('#more-notes-link').toggle(function() {
+    $('#more-notes').toggle();
+    $('#more-notes-link .triangle').html('&#9662;');
+  },
+  function() {
+    $('#more-notes').toggle();
+    $('#more-notes-link .triangle').html('&#9656;');
   });
 
   var eventId = $("#calendar").attr("data-event");
@@ -207,10 +307,11 @@ $(document).ready(function() {
   $(".new-tag-form").bind("ajax:beforeSend", function(evt, data, status, xhr){
 		tagText = validateTag()
     if(!tagText) { return false; }
-
+    $(this).hide();
     newTagLi = $(document.createElement('li'));
-		newTagLi.addClass('tag').addClass('deletable').addClass('rounder').html(tagText).appendTo($('.tags'));
-		$('.tags').append("\n");
+		newTagLi.addClass('tag').addClass('deletable').addClass('rounder').html(tagText);
+    $('.tags li:last').before(newTagLi);
+    $('.tags li:last').before("\n");
 		createControlsForTag(newTagLi);
     $('#new-tag-field').attr('value', '');
 
@@ -271,6 +372,7 @@ validateTag = function() {
     return false;
   } else {
     $('.tag-error').text("");
+    $('li.tag.new-tag').show();
     return tagText;
   }
 }
@@ -301,7 +403,7 @@ createControlsForTag = function(tagEl) {
 function touchCurrency() {
   $(".currency").each(function(index, element){
 		$(this).focus()
-		$(this).mask()
+		$(this).maskMoney('mask')
 	});
 }
 

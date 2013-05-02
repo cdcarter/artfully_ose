@@ -26,10 +26,10 @@ module Valuation
     def calculate_lifetime_donations
       self.lifetime_donations = 0
       lifetime_orders.each do |o|
-        o.donations.each { |i| self.lifetime_donations = self.lifetime_donations + i.price}
+        o.donations.each { |i| self.lifetime_donations = self.lifetime_donations + i.total_price}
       end
       save
-      lifetime_donations
+      self.lifetime_donations
     end
   end
 end

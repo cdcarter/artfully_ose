@@ -14,12 +14,20 @@
       %h6 Buy Tickets
 
       - @use_calendar = (@event.upcoming_public_shows.length > 5 || params[:calendar] == 'true')
-
-      %ul#shows.unstyled
-        =render :partial => 'show', :collection => @event.upcoming_public_shows, :as => :show
       
       =render 'calendar' if @use_calendar
-      
+      #loading-container
+        #loading
+          Hang tight! We're searching for your tickets.
+          =image_tag "loading.gif"
+        #error
+          We had a problem finding tickets. Please try again.
+      %ul#shows.unstyled
+        - @event.upcoming_public_shows.each do |show|
+          %li{:id => "show_#{show.id}", 'data-show-uuid' => show.uuid, :style => "#{'display:none' if @use_calendar}", 'data-date' => "#{show.datetime_local_to_event.strftime('%D')}"}
+            - unless @use_calendar
+              =render :partial => 'store/shows/show', :locals => {:show => show, :collapsed => !@use_calendar}
+
     .span4
       - unless @event.description.blank?
         #description.side-section
@@ -159,11 +167,14 @@
             = address.label :address1, "Billing Address", :class => 'control-label required'
             .controls= address.text_field :address1, :class => 'required'
           .control-group
-            = address.label :city, "City", :class => 'control-label required'
-            .controls= address.text_field :city, :class => 'required'
+            = address.label :country, "Country", :class => 'control-label required'
+            .controls= address.select(:country, [], :class => 'required')
           .control-group
             = address.label :state, "State", :class => 'control-label required'
-            .controls= address.select(:state, options_for_select(sorted_us_state_names), :class => 'required')
+            .controls= address.select(:state, [], :class => 'required')
+          .control-group
+            = address.label :city, "City", :class => 'control-label required'
+            .controls= address.text_field :city, :class => 'required'
           .control-group
             = address.label :zip, "Postal Code", :class => 'control-label required'
             .controls= address.text_field :zip, :class => 'required span2'

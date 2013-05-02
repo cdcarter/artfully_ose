@@ -36,7 +36,7 @@
 
   %h3 Location
   = f.number_field :zip, in: 00001..99999, placeholder: "Zipcode", class: "input-small"
-  = f.select :state, options_for_select(sorted_us_state_names, selected: search.state), {include_blank: "State"}, {class: "input-medium"}
+  = f.select :state, options_for_select(us_states, selected: search.state), {include_blank: "State"}, {class: "input-medium"}
 
   .control
     = f.submit "Search", :class => 'btn'

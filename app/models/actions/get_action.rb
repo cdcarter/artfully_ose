@@ -1,4 +1,6 @@
 class GetAction < Action
+  include ImmutableAction
+  
   def subtype
     "Purchase"
   end
@@ -8,6 +10,10 @@ class GetAction < Action
   end
   
   def verb
-    "purchased"
+    "bought"
+  end
+
+  def self.subtypes
+    []
   end
 end

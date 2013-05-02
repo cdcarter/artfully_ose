@@ -4,6 +4,10 @@ class RefundOrder < Order
   def self.location
     "Artful.ly"
   end
+
+  def verb
+    "Received refund"
+  end
   
   def sell_tickets
   end

@@ -10,24 +10,51 @@ class Action < ActiveRecord::Base
   validates_presence_of :occurred_at
   validates_presence_of :person_id
 
+  before_save :default_starred_to_false
+
   set_watch_for :occurred_at, :local_to => :organization
+
+  def self.for_organization(organization)
+    Kernel.const_get(self.name.camelize).new({:occurred_at  => DateTime.now.in_time_zone(organization.time_zone), 
+                :organization => organization})
+  end
 
   #
   # Action types: give, go, do, get, join, hear
   #
-  GIVE_TYPES = [ "Monetary", "In-Kind" ].freeze
-
   def self.create_of_type(type)
     case type
       when "hear" then HearAction.new
+      when "say" then SayAction.new
+      when "go" then GoAction.new
       when "give" then GiveAction.new
+      when "do" then DoAction.new
     end
   end
 
+  def self.subtypes_by_type
+    {
+      "hear" => HearAction.subtypes,
+      "say" => SayAction.subtypes,
+      "go" => GoAction.subtypes,
+      "give" => GiveAction.subtypes,
+      "do" => DoAction.subtypes,
+      "get" => GetAction.subtypes
+    }
+  end
+
+  # destroyable? is mixed-in from ohnoes.rb
+  def editable?
+    true
+  end
+
+  #
+  # set_params and set_creator need to be wrapped up into an initialize method
+  #
   def set_params(params, person)
     params ||= {}
 
-    self.occurred_at = params[:occurred_at]
+    self.occurred_at = ActiveSupport::TimeZone.create(Organization.find(self.organization_id).time_zone).parse(params[:occurred_at]) if params[:occurred_at].present?
     self.subtype = params[:subtype]
     self.details = params[:details]
 
@@ -45,38 +72,33 @@ class Action < ActiveRecord::Base
   end
   
   def verb
-    ""
+    verb
+  end
+  
+  def quip
+    verb
   end
   
   def sentence
-    (verb + " " + details.uncapitalize)
+    verb + " " + details
   end
   
   def full_details
     details
   end
-
-  def hear_action_subtypes
-    [ "Email (sent)",
-      "Email (received)",
-      "Phone (initiated)",
-      "Phone (received)",
-      "Postal (sent)",
-      "Postal (received)",
-      "Meeting",
-      "Twitter",
-      "Facebook",
-      "Blog",
-      "Press" ]
-  end
   
   #This returnes an ARel, so you can chain
-  def self.recent(organization, limit = 5)
-    Action.includes(:person).where(:organization_id => organization).order('occurred_at DESC').limit(limit)
+  def self.recent(organization)
+    Action.includes(:person, :subject).where(:organization_id => organization).order('occurred_at DESC')
   end
 
-  def give_action_subtypes
-    GIVE_TYPES
+  def self.subtypes
+    []
+  end
+
+  def default_starred_to_false
+    self.starred = false if self.starred.blank?
+    true
   end
 
   #

@@ -1,10 +1,6 @@
-- in_section :transactions
-- content_for :header do
-  %h1 Record Contribution
+.modal-header
+  .close{'data-dismiss'=>'modal'} x
+  %h3 New Contribution
 
-.row
-  .span3  
-    =render :partial => "sidebar", :locals => {:contribution => @contribution}
-    
-  .span9
-    =render :partial => "form", :locals => {:contribution => @contribution, :cancel_path => person_path(@contribution.person_id)}
+.modal-body
+  =render :partial => "form", :locals => {:contribution => @contribution, :cancel_path => person_path(@contribution.person_id)}

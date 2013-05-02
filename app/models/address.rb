@@ -2,6 +2,10 @@ class Address < ActiveRecord::Base
   attr_accessible :address1, :address2, :city, :state, :zip, :country, :person_id
   belongs_to :person
 
+  #
+  # Note that any validations here are skipped in person.rb
+  # so that unsaved people can also have unsaved addresses
+  #
   validates :person_id, :presence => true
 
   def address

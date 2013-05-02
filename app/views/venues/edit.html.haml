@@ -31,7 +31,7 @@
       .control-group
         =form.label :state, "State", :class => 'control-label'
         .controls
-          = form.select(:state, options_for_select(sorted_us_state_names, @event.venue.state))
+          = form.select(:state, options_for_select(us_states, @event.venue.state))
           
       .control-group
         =form.label :zip, "Zip", :class => 'control-label'

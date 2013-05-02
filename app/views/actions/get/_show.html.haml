@@ -1,0 +1,10 @@
+%p
+  =render :partial => "actions/shared/show", :locals => { :action => action }
+
+
+%ul
+  - action.subject.items.each do |item|
+    %li #{number_as_cents(item.price)} - #{item.product.order_summary_description}
+  %li 
+    %strong #{number_as_cents(action.subject.total||0)} - Total
+%p= link_to "View order details <i class='icon-share-alt'></i>".html_safe, order_path(action.subject)

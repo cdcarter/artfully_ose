@@ -33,6 +33,7 @@ describe EventsImport do
       end
 
       it "should create one event, venue for each event. venue in the import file" do
+        imported_events.length.should eq 2
         imported_events.each do |event|
           Event.where(:name => event.name).length.should eq 1
           event.should_not be_nil

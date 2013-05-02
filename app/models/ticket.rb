@@ -67,6 +67,10 @@ class Ticket < ActiveRecord::Base
     pluralize(tickets.length, "ticket") + " to " + events_string
   end
 
+  def order_summary_description
+    self.section.name
+  end
+
   #
   # Unfortunately named.  This will return available tickets, not a count of available tickets
   # as is the idiom elsewhere in the app

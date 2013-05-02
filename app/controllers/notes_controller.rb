@@ -18,6 +18,7 @@
   def destroy
     if Note.exists? params[:id]
       Note.destroy(params[:id])
+      flash[:notice] = "Your note has been deleted."
     else
       flash[:notice] = "We couldn't find that note to delete."
     end

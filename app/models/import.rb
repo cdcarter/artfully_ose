@@ -69,6 +69,8 @@ class Import < ActiveRecord::Base
   # This composes errors thrown *during* the import.  For validation errors, see invalidate!
   #
   def fail!(error = nil, row = nil, row_num = 0)
+    Rails.logger.error "IMPORT ERROR [#{self.id}]: #{error.message}"
+    error.backtrace.each { |line| Rails.logger.error "     #{line}" }
     self.import_errors.create! :row_data => row, :error_message => "Row #{row_num}: #{error.message}"
     failed!
     rollback
@@ -131,19 +133,17 @@ class Import < ActiveRecord::Base
     self.invalidate!
   end
 
+  def hash_address(parsed_row)
+    parsed_row.address_attributes
+  end
+
   def attach_person(parsed_row)
     ip = parsed_row
     
     person = self.people.build(parsed_row.person_attributes)
     person.organization = self.organization
-    person.address = Address.new \
-      :address1  => ip.address1,
-      :address2  => ip.address2,
-      :city      => ip.city,
-      :state     => ip.state,
-      :zip       => ip.zip,
-      :country   => ip.country
 
+    person.build_address(hash_address(parsed_row))
     person.tag_list = ip.tags_list.join(", ")
 
     1.upto(3) do |n|

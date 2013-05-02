@@ -7,6 +7,17 @@ ul.tags
   li
     display: inline-block
     position: relative
+    margin-bottom: 3px
+    &.new-tag
+      background: none
+      border: 1px dashed #999
+      a
+        color: rgb(51, 51, 51)
+        font-weight: normal
+        &:hover
+          text-decoration: none
+      &:hover
+        background: #fff
   ul.controls
     position: absolute
     background: #fff

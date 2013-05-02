@@ -4,7 +4,13 @@ class Cart < ActiveRecord::Base
   has_many :donations, :dependent => :destroy
   has_many :tickets, :after_add => :set_timeout
   after_destroy :clear!
+  before_validation :set_token
   attr_accessor :special_instructions
+
+  validates :token,
+            :presence => true,
+            :length => { :is => 64 },
+            :format => /\A[0-9a-f]+\z/i
 
   belongs_to :discount
 
@@ -18,6 +24,7 @@ class Cart < ActiveRecord::Base
   end
 
   delegate :empty?, :to => :items
+
   def items
     self.tickets + self.donations
   end
@@ -49,13 +56,8 @@ class Cart < ActiveRecord::Base
     save if new_record?
     
     if Delayed::Worker.delay_jobs
-      self.delay(:run_at => Time.now + 10.minutes).expire_ticket(ticket)
+      Delayed::Job.enqueue(ExpireTicketJob.new(Array.wrap(ticket.id)), :run_at => 10.minutes.from_now, :queue => "ticket")
     end
-  end
-
-  def expire_ticket(ticket)
-    ticket.reset_price!
-    tickets.delete(ticket)
   end
 
   def items_subject_to_fee
@@ -145,14 +147,72 @@ class Cart < ActiveRecord::Base
     true
   end
 
-  def reseller_is?(reseller)
-    reseller == nil
+  def self.create_for_reseller(reseller_id = nil, params = {})
+    reseller_id.blank? ? Cart.create(params) : Reseller::Cart.create( params.merge({:reseller => Organization.find(reseller_id)}) )
+  end
+  
+  def self.find_or_create(cart_token, reseller_id)
+    if cart_token.nil?
+      raise ActiveRecord::RecordNotFound.new("No cart with nil token")
+    end
+
+    if reseller_id.present?
+      if Cart.find_by_token_and_reseller_id(cart_token, reseller_id)
+        cart = Cart.find_by_token_and_reseller_id(cart_token, reseller_id)
+      else
+        cart = Reseller::Cart.create(token: cart_token, reseller_id: reseller_id)
+      end
+    else
+      cart = Cart.find_or_create_by_token!(cart_token)
+    end
+
+    if cart.completed?
+      cart.transfer_token_to_new_cart
+    else
+      cart
+    end
+  end
+
+  def transfer_token_to_new_cart
+    new_cart = Cart.new
+    transaction do
+      new_cart.type = self.type
+      new_cart.reseller_id = self.reseller_id
+      new_cart.token = self.token
+      self.token = nil
+      self.save!
+      new_cart.save!
+    end
+    new_cart
+  end
+
+  def reseller_is?(reseller_id)
+    (self.reseller_id.blank? && reseller_id.blank?) || (self.reseller_id == reseller_id.to_i)
   end
 
   def reset_prices_on_tickets
     transaction do
       tickets.each {|ticket| ticket.reset_price! }
     end
+  end
+
+  #
+  # for_reseller is deprecated and will be removed when Widget v1 support is removed. Please use find_or_create.
+  #
+  def self.for_reseller(reseller_id = nil, params = {})
+    ActiveSupport::Deprecation.warn("for_reseller is deprecated and will be removed when Widget v1 support is removed. Please use find_or_create.")
+    reseller_id.blank? ? Cart.create(params) : Reseller::Cart.create( params.merge({:reseller => Organization.find(reseller_id)}) )
+  end
+
+  #
+  # find_cart is deprecated and will be removed when Widget v1 support is removed. Please use find_or_create.  
+  #
+  def self.find_cart(cart_id, reseller_id)
+    ActiveSupport::Deprecation.warn("find_cart is deprecated and will be removed when Widget v1 support is removed. Please use find_or_create.")
+    Rails.logger.debug("Searching for cart [#{cart_id}] for reseller [#{reseller_id}]")
+    rel = where(:id => cart_id)
+    rel.where(:reseller_id => reseller_id) unless reseller_id.blank?
+    rel.first
   end
 
   private
@@ -168,4 +228,7 @@ class Cart < ActiveRecord::Base
       payment.purchase(options) ? approve! : reject!
     end
 
+    def set_token
+      self.token ||= SecureRandom.hex(32)
+    end
 end

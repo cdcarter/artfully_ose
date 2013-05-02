@@ -11,16 +11,20 @@ class ParsedRow
     :email            => [ "Email", "Email address" ]
   }
 
-  PEOPLE_FIELDS = SHARED_FIELDS.merge( {
-    :salutation       => [ "Salutation" ],     
-    :title            => [ "Title" ],
-    :company          => [ "Company name", "Company" ],
+  ADDRESS_FIELDS = {
     :address1         => [ "Address 1", "Address1" ],
     :address2         => [ "Address 2", "Address2" ],
     :city             => [ "City" ],
     :state            => [ "State" ],
     :zip              => [ "Zip", "Zip code" ],
-    :country          => [ "Country" ],
+    :country          => [ "Country" ]
+  }
+
+  PEOPLE_FIELDS = SHARED_FIELDS.merge( {
+    :salutation       => [ "Salutation" ],     
+    :title            => [ "Title" ],
+    :company          => [ "Company name", "Company" ],
+
     :phone1_type      => [ "Phone1 type", "Phone 1 type" ],
     :phone1_number    => [ "Phone1 number", "Phone 1", "Phone 1 number", "Phone1" ],
     :phone2_type      => [ "Phone2 type", "Phone 2 type" ],
@@ -58,7 +62,7 @@ class ParsedRow
     #TODO: Total contribution sanity check
   })
   
-  FIELDS = PEOPLE_FIELDS.merge(EVENT_FIELDS).merge(DONATION_FIELDS)
+  FIELDS = PEOPLE_FIELDS.merge(ADDRESS_FIELDS).merge(EVENT_FIELDS).merge(DONATION_FIELDS)
 
   # Enumerated columns default to the last value if the data value is not valid.
   #
@@ -147,12 +151,16 @@ class ParsedRow
   def preview(field_name)
     field_name.to_s.ends_with?("amount") ? self.send("unparsed_#{field_name}") : self.send(field_name)
   end
+
+  def address_attributes
+    Hash[ADDRESS_FIELDS.keys.map{|k| [k, self.send(k)]}]
+  end
   
   def person_attributes
       {
         :email           => self.email,
         :salutation      => self.salutation,
-        :title      => self.title,
+        :title           => self.title,
         :first_name      => self.first,
         :last_name       => self.last,
         :company_name    => self.company,

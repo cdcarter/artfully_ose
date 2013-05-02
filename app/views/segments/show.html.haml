@@ -18,7 +18,7 @@
           %li
             =link_to "Tag all", "#tag-modal", 'data-toggle' => 'modal', :rel => "tooltip", :data => {:toggle => "modal", "original-title" => "Give all of the people in this list segment the same tag.", :trigger => "hover", :placement => "right"}
           %li
-            =link_to "Log action", new_segment_action_path(@segment, :format => :html, :type => :hear), :id => 'hear-action-link', "data-remote" => "true"
+            =link_to "Log action", "#bulk-action-modal", :id => 'bulk-action-link', 'data-toggle' => 'modal'
           %li
             = link_to "Delete this list segment", @segment, :method => :delete, :data => {:confirm => "Are you sure you want to delete #{@segment.name}?"}
           %li
@@ -39,16 +39,17 @@
       = will_paginate @people, :inner_window => 2, :outer_window => 0
 
 #tag-modal.modal
-  = form_tag tag_segment_path(@segment), :onsubmit => "return validateTag()"
-  .modal-header
-    .close{"data-dismiss" => "modal"} ×
-    %h3 Tag everyone in #{@segment.name}
-  .modal-body
-    -# = text_field_tag :name, "", :placeholder => "tag-name", :required => "required"
-    =text_field_tag :name, "", :id=>"new-tag-field", :required => "required", :class => "typeahead", "data-provide"=>"typeahead", :autocomplete => 'off', "data-items"=>"5", "data-source"=>"[" + @tags_string.html_safe + "]"  
-    .tag-error
-    %p This tag will be applied to people that are currently in this list segment. Any future additions/deletions to this list will not be automatically tagged.
-  .modal-footer
-    = submit_tag "Save", :class => "btn"
+  = form_tag tag_segment_path(@segment), :onsubmit => "return validateTag()" do
+    .modal-header
+      .close{"data-dismiss" => "modal"} ×
+      %h3 Tag everyone in #{@segment.name}
+    .modal-body
+      -# = text_field_tag :name, "", :placeholder => "tag-name", :required => "required"
+      =text_field_tag :name, "", :id=>"new-tag-field", :required => "required", :class => "typeahead", "data-provide"=>"typeahead", :autocomplete => 'off', "data-items"=>"5", "data-source"=>"[" + @tags_string.html_safe + "]"  
+      .tag-error
+      %p This tag will be applied to people that are currently in this list segment. Any future additions/deletions to this list will not be automatically tagged.
+    .modal-footer
+      = submit_tag "Save", :class => "btn"
 
-#hear-action-modal.modal
+#bulk-action-modal.action-form.modal
+  = render :partial => 'actions/modal', :locals => {:action => Action.for_organization(current_user.current_organization), :target => @segment}

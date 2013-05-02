@@ -13,6 +13,7 @@ Rails.application.routes.draw do
 
   namespace :store do
     resources :events, :only => :show
+    resources :shows, :only => :show
     resource :order, :only => [:sync] do      
       post :sync, :on => :collection
     end
@@ -66,8 +67,18 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :people, :except => :destroy do
+  resources :people do
     resources :actions
+
+    ["get_action", 
+     "refund_action", 
+     "join_action", 
+     "hear_action", 
+     "say_action", 
+     "do_action", 
+     "go_action",
+     "give_action"].each { |action_type| resources :actions, :as => action_type }
+
     resources :notes
     resources :phones, :only => [:create, :destroy]
     resource  :address, :only => [:create, :update, :destroy]
@@ -164,6 +175,7 @@ Rails.application.routes.draw do
 
   resources :discounts_reports, :only => [:index]
 
+  match '/recent_activity' => 'index#recent_activity', :as => :recent_activity
   match '/events/:event_id/charts/' => 'events#assign', :as => :assign_chart, :via => "post"
   match '/people/:id/star/:type/:action_id' => 'people#star', :as => :star, :via => "post"
   match '/people/:id/tag/' => 'people#tag', :as => :new_tag, :via => "post"

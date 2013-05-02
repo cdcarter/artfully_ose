@@ -12,3 +12,5 @@
 
         = "<td class='#{dates.include?(date) ? "has_show" : ""}' data-date='#{date.strftime('%D')}'>#{date.strftime('%e')}</td>".html_safe
         = "</tr>".html_safe if date.cwday == 6
+
+%div{:style => 'clear:both'}

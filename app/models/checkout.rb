@@ -13,7 +13,7 @@ class Checkout
   end
   
   def message
-    message = @payment.errors.full_messages.to_sentence.downcase
+    message = @error || @payment.errors.full_messages.to_sentence.downcase
     message = message.gsub('customer', 'contact info')
     message = message.gsub('credit card is', 'payment details are')
     message = message[0].upcase + message[1..message.length] unless message.blank? #capitalize first word
@@ -33,12 +33,14 @@ class Checkout
   end
 
   def valid?
-    unless (!!cart and !!payment and payment.valid?)
-      return false
-    end
-    
+    return false if cart.nil?
+
     if cart.empty?
       @error = "Your tickets have expired.  Please select your tickets again."
+      return false
+    end
+
+    unless (!!cart and !!payment and payment.valid?)
       return false
     end
     
@@ -78,7 +80,17 @@ class Checkout
         
         @order = new_order(organization, order_timestamp, @person)
         @order.save!
-        OrderMailer.confirmation_for(order).deliver unless @person.dummy? || @person.email.blank?
+
+        #
+        # This should be DJ'd
+        #
+        begin
+          OrderMailer.confirmation_for(order).deliver unless @person.dummy? || @person.email.blank?
+        rescue Exception => e
+          Exceptional.context(:order_id => order.id)
+          Exceptional.handle(e, "Could not send order confirmation for order")
+        end
+
         created_orders << @order
       end
       

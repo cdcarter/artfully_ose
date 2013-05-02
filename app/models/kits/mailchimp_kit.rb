@@ -61,33 +61,39 @@ class MailchimpKit < Kit
   end
 
   def change_lists(new_list_ids)
+    added_list_names = []
+    added_list_ids = []
+    removed_list_names = []
     lists.each do |list|
       list_id = list[1]
       if !list_attached?(list_id) && new_list_ids.include?(list_id)
         add_list(list_id)
+        added_list_ids << list_id
+        added_list_names << find_list_name(list_id)
       elsif list_attached?(list_id) && !new_list_ids.include?(list_id)
         remove_list(list_id)
+        removed_list_names << find_list_name(list_id)
       end
     end
+    send_updated_lists_email(added_list_ids, added_list_names, removed_list_names)
   end
 
   def add_list(list_id)
-    list_name = lists.find { |list| list[1] == list_id }[0]
-
     self.attached_lists = attached_lists.reject { |list| list.empty? }
     attached_lists << {
       :list_id => list_id,
-      :list_name => list_name
+      :list_name => find_list_name(list_id)
     }
-
     save
-    Delayed::Job.enqueue MailchimpSyncJob.new(self, :type => :initial_sync, :list_id => list_id), :queue => QUEUE
+  end
+
+  def send_updated_lists_email(added_list_ids, added_list_names, removed_list_names)
+    Delayed::Job.enqueue MailchimpSyncJob.new(self, :type => :initial_sync, :list_ids => added_list_ids, :added_list_names => added_list_names, :removed_list_names => removed_list_names), :queue => QUEUE
   end
 
   def remove_list(list_id)
     self.attached_lists = attached_lists.reject { |list| list[:list_id] == list_id }
     save
-    Delayed::Job.enqueue MailchimpSyncJob.new(self, :type => :list_removal, :list_id => list_id), :queue => QUEUE
   end
 
   def create_webhooks(list_id)
@@ -285,14 +291,12 @@ class MailchimpKit < Kit
     occurred_at = Time.now
     organization.people.each do |person|
       next if !person.subscribed_lists.include?(list_id)
-      hear_action = HearAction.new
-      hear_action.set_params({
-        :details => %{"#{data["subject"].truncate(25)}" delivered to #{list_name(list_id)} MailChimp list.},
-        :occurred_at => occurred_at,
-        :subtype => "Email (Sent)"
-      }, person)
-      hear_action.organization_id = organization_id
-      hear_action.save
+      say_action = SayAction.for_organization(organization)
+      say_action.details = %{"#{data["subject"].truncate(25)}" delivered to #{list_name(list_id)} MailChimp list.}
+      say_action.occurred_at = occurred_at,
+      say_action.subtype = "Email (Sent)"
+      say_action.person = person
+      say_action.save
     end
   end
 
@@ -444,5 +448,9 @@ class MailchimpKit < Kit
       :email_address => email,
       :merge_vars => { "FNAME" => first_name, "LNAME" => last_name }
     })
+  end
+
+  def find_list_name(list_id)
+    lists.find { |list| list[1] == list_id }[0]
   end
 end

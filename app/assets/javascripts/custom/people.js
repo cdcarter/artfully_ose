@@ -85,11 +85,13 @@ $(document).ready(function() {
        url: "/people/" + person_id + "/star/" + type + "/" + id
     });
 
-    if(is_star(star)) {
-      $(this).html("&#10025;");
+    if($(this).hasClass('active')) {
+      $(this).addClass('not-active');
+      $(this).removeClass('active');
       $(this).trigger("unstarred");
     } else {
-      $(this).html("&#10029;");
+      $(this).removeClass('not-active');
+      $(this).addClass('active');
       $(this).trigger("starred");
     }
 

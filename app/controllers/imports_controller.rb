@@ -17,8 +17,14 @@ class ImportsController < ArtfullyOseController
 
   def show
     @import = organization.imports.find(params[:id])
-    @parsed_rows = @import.parsed_rows.paginate(:page => params[:page], :per_page => 50)
-    
+
+    #
+    # Building an import preview was just murdering us. The problem is way down in Array.index in parsed_row.load_value.
+    # Temporarily shutting it off.
+    #
+    # if @import.status == "pending"
+    #   @parsed_rows = @import.parsed_rows.paginate(:page => params[:page], :per_page => 50)
+    # end
     @people = Person.where(:import_id => @import.id).paginate(:page => params[:page], :per_page => 50) unless @import.id.nil?
   end
 

@@ -29,9 +29,10 @@ class Order < ActiveRecord::Base
   validates_presence_of :person_id
   validates_presence_of :organization_id
 
-  # Both of these are handle_asynchronously
+  # The three of these are handle_asynchronously
   after_create :create_purchase_action, :unless => :skip_actions
   after_create :create_donation_actions, :unless => :skip_actions
+  after_save :calculate_lifetime_value
 
   after_create :sell_tickets
 
@@ -272,6 +273,12 @@ class Order < ActiveRecord::Base
   def contact_email
     items.try(:first).try(:show).try(:event).try(:contact_email)
   end
+
+  def calculate_lifetime_value
+    self.person.calculate_lifetime_value
+    self.person.calculate_lifetime_donations
+  end
+  handle_asynchronously :calculate_lifetime_value
 
   def create_donation_actions
     items.select(&:donation?).collect do |item|

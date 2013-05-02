@@ -225,9 +225,57 @@ describe Person do
       subject.notes.length.should eq num_notes + 1
     end
   end
+
+  describe "#destroy" do
+    it "should set :deleted_at to a time" do
+      subject.deleted_at.should == nil
+      subject.destroy.should == true
+      subject.deleted_at.should_not == nil
+    end
+    context "when the person has actions" do
+      before do
+        subject.stub(:actions) {[1]}
+      end
+      it "should return false" do
+        subject.destroy.should == false
+      end
+      it "should not be deleted" do
+        expect{subject.destroy}.to_not change{subject.deleted_at}
+      end
+      context "BUT :with_prejudice is set to true" do
+        it "should return true" do
+          subject.destroy(with_prejudice: true).should == true
+        end
+        it "should be deleted" do
+          expect{subject.destroy(with_prejudice: true)}.to change{subject.deleted_at}
+        end
+      end
+    end
+    context "when the person has orders" do
+      before do
+        subject.stub(:orders) {[1]}
+      end
+      it "should return false" do
+        subject.destroy.should == false
+      end
+      it "should not be deleted" do
+        expect{subject.destroy}.to_not change{subject.deleted_at}
+      end
+    end
+    context "when the person has tickets" do
+      before do
+        subject.stub(:tickets) {[1]}
+      end
+      it "should return false" do
+        subject.destroy.should == false
+      end
+      it "should not be deleted" do
+        expect{subject.destroy}.to_not change{subject.deleted_at}
+      end
+    end
+  end
   
   describe "#valid?" do
-  
     it { should be_valid }
     it { should respond_to :email }
   

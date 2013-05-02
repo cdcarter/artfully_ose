@@ -10,7 +10,7 @@ class ContributionsController < ArtfullyOseController
   def new
     @contribution = create_contribution
     if @contribution.has_contributor?
-      render :new
+      render :new, :layout => false
     else
       @contributors = contributors
       render :find_person
@@ -30,8 +30,8 @@ class ContributionsController < ArtfullyOseController
     @contribution = Contribution.for(@order)
     new_contribution = Contribution.new(params[:contribution])
     @contribution.update(new_contribution)
-    flash[:notice] = "Your order has been edited"
-    redirect_to order_path(@order)
+    flash[:notice] = "Your edits have been saved"
+    redirect_to request.referer
   end
   
   def destroy

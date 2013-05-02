@@ -13,9 +13,13 @@ describe Action do
   end
 
   describe "#set_params" do
-    let(:params) { {occurred_at: 3.days.ago} }
+    before(:each) do
+      subject.set_creator(user)
+    end
+
+    let(:params) { {details: "hi"} }
     it "should set occurred_at" do
-      expect {subject.set_params(params, person)}.to change(subject, :occurred_at)
+      expect {subject.set_params(params, person)}.to change(subject, :details)
     end
     it "should not set the creator" do
       lambda { subject.set_params(params, person)}.should_not change(subject, :creator)

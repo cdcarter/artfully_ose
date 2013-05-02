@@ -1,5 +1,6 @@
 class RefundAction < GetAction
-  
+  include ImmutableAction
+
   def subtype
     "Refund"
   end

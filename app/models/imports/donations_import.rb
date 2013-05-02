@@ -38,7 +38,7 @@ class DonationsImport < Import
     raise Import::RowError, "No Amount included in this row: #{parsed_row.row}" if parsed_row.unparsed_amount.blank?
     raise Import::RowError, "Please include a first name, last name, or email in this row: #{parsed_row.row}" unless attach_person(parsed_row).person_info
     raise Import::RowError, "Please include a payment method in this row: #{parsed_row.row}" if parsed_row.payment_method.blank?
-    raise Import::RowError, "Donation type must be 'Monetary' or 'In-Kind': #{parsed_row.row}" unless Action::GIVE_TYPES.include? (parsed_row.donation_type)
+    raise Import::RowError, "Donation type must be 'Monetary' or 'In-Kind': #{parsed_row.row}" unless GiveAction.subtypes.include? (parsed_row.donation_type)
     valid_date?   parsed_row.donation_date
     
     [:unparsed_amount, :unparsed_nongift_amount, :unparsed_deductible_amount].each do |amt|

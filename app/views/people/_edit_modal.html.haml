@@ -1,0 +1,134 @@
+#edit-person.modal
+  .modal-header
+    = link_to '&times;'.html_safe, '#', :class => 'close', 'data-dismiss' => 'modal'
+    %h3 Edit #{@person.posessive} Info
+  = form_for(@person, :html => {:class => 'form-horizontal'}) do |form|
+    .modal-body
+      .row
+        .span2
+          %ul.nav.nav-accordian
+            %li.active.tab= link_to 'Basics', '#basics', 'data-toggle' => 'tab'
+            %li.tab= link_to 'Address', '#address', 'data-toggle' => 'tab'
+            %li.tab= link_to 'Phone', '#phone', 'data-toggle' => 'tab'
+            %li.tab= link_to 'Social Media', '#social-media', 'data-toggle' => 'tab'
+            %li.tab-merge= link_to 'Merge', '#merge'
+            %li.tab-delete= link_to 'Delete', '#delete'
+        .span7
+          .tab-content
+            #basics.tab-pane.active
+              .controls
+                = form.label :salutation, :class => 'control-label'
+                .control= form.text_field :salutation
+              .controls
+                = form.label :first_name, :class => 'control-label'
+                .control= form.text_field :first_name
+              .controls
+                = form.label :last_name, :class => 'control-label'
+                .control= form.text_field :last_name
+              .controls
+                = form.label :email, :class => 'control-label'
+                .control= form.text_field :email
+              .controls
+                = form.label :title, :class => 'control-label'
+                .control= form.text_field :title
+              .controls
+                = form.label :company_name, :class => 'control-label'
+                .control= form.text_field :company_name
+
+            #address.tab-pane
+              = form.fields_for :address do |address_form|
+                .controls
+                  = address_form.label :address, :class => 'control-label'
+                  .control
+                    = address_form.text_field :address1
+                    %div{:style => 'margin-left:159px'}
+                      = address_form.text_field :address2
+                .controls
+                  = address_form.label :country, :class => 'control-label'
+                  .control
+                    = address_form.select :country, options_for_select([[@person.address.country]], @person.address.country)
+                .controls
+                  = address_form.label :state, "State / Province", :class => 'control-label'
+                  .control
+                    = address_form.select :state, options_for_select([[@person.address.state]], @person.address.state)
+                .controls
+                  = address_form.label :city, :class => 'control-label'
+                  .control
+                    = address_form.text_field :city
+                .controls
+                  = address_form.label :zip, "Zip / Postal Code", :class => 'control-label'
+                  .control
+                    = address_form.text_field :zip
+
+            #phone.tab-pane
+              - @person.phones.build if @person.phones.empty?
+              = form.fields_for :phones do |phone_form|
+                = render "phone_fields", :f => phone_form
+
+              .control-group
+                %label.control-label
+                .controls
+                  %i.icon-plus-sign.icon-gray
+                  = link_to_add_fields 'Add another number', form, :phones
+
+            #social-media.tab-pane
+              .controls
+                = form.label :website, :class => 'control-label'
+                .control
+                  .input-prepend
+                    %span.add-on http://
+                    = form.text_field :website
+              .controls
+                = form.label :twitter_handle, 'Twitter', :class => 'control-label'
+                .control
+                  .input-prepend
+                    %span.add-on @
+                    = form.text_field :twitter_handle
+              .controls
+                = form.label :facebook_url, 'Facebook', :class => 'control-label'
+                .control
+                  .input-prepend
+                    %span.add-on http://facebook.com/
+                    = form.text_field :facebook_url
+              .controls
+                = form.label :linked_in_url, 'LinkedIn', :class => 'control-label'
+                .control
+                  .input-prepend
+                    %span.add-on http://linkedin.com/in/
+                    = form.text_field :linked_in_url
+            #merge.tab-pane
+              %p
+                Combine all notes, actions, phone numbers, and tags with another person.
+              = link_to "Select Master Person Record", new_merge_path(:loser => @person), :method => :get, :class => "btn btn-warning"
+            #delete.tab-pane
+              - if @person.destroyable?
+                %p
+                  Delete
+                  = @person
+                  from Artful.ly.
+                = link_to "Delete", @person, :method => :delete, :class => "btn btn-danger delete-person", :confirm => "Are you sure you want to delete #{@person}?"
+              - else
+                %p
+                  This person has actions or orders, so we're unable to delete this person at this time.
+                = link_to "Delete", "#", :class => "btn btn-danger delete-person disabled"
+
+    .modal-footer
+      = link_to 'Cancel', '#', :class => 'btn', 'data-dismiss' => 'modal'
+      = form.submit 'Save Changes', :class => 'btn btn-primary save-person'
+
+
+- content_for :custom_js do
+  // change modal based on tab
+  :javascript
+    $(document).ready(function() {
+      $('.tab-merge a, .tab-delete a').click(function (e) {
+        e.preventDefault();
+        $(this).tab('show');
+        $('#edit-person .save-person').hide();
+      })
+      $('.tab a').click(function (e) {
+        e.preventDefault();
+        $(this).tab('show');
+        $('#edit-person .save-person').show();
+      })
+    });

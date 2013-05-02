@@ -26,7 +26,7 @@ module Valuation
     def calculate_lifetime_value
       self.lifetime_value = 0
       lifetime_orders.each do |o|
-        o.items.each { |i| self.lifetime_value = self.lifetime_value + i.price}
+        o.items.each { |i| self.lifetime_value = self.lifetime_value + i.total_price}
       end
       save
       lifetime_value

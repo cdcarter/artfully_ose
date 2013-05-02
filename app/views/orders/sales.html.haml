@@ -44,9 +44,9 @@
                 %td{:rowspan => rowspan}= link_to_person(order.person)
                 %td{:rowspan => rowspan}= (order.payment_method || "")
               %td 
-                ="#{item.product.event.name}"
+                ="#{item.show.event.name}"
                 %br
-                ="#{l item.product.show.datetime_local_to_event}"
+                ="#{l item.show.datetime_local_to_event}"
               %td= number_as_cents item.price
     = will_paginate(@search.results)
 

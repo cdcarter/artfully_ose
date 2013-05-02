@@ -17,19 +17,8 @@
         .span3
           = link_to "Approve", approve_import_path(import), :data => {:confirm => "Are you sure you want to approve this import?"}, :class => "btn btn-success btn-large"
     
-    -@import.events_hash.each_with_index do |(event_key, event_rows), event_index|
-      %table.table.table-bordered.table-striped.table-topper
-        %tr
-          %th{:colspan => "3", :style => 'width: 400px'}
-            =event_rows.first.event_name
-            %br
-            =event_rows.first.venue_name
-            %br
-            =l DateTime.parse(@import.eight_pm?(event_rows.first.show_date)), :format => :short
-        -event_rows.each_with_index do |row, index|
-          %tr
-            %td="#{row.first} #{row.last}"
-            %td{:style => 'width:100px'}=number_as_cents row.amount
-            %td{:style => 'width:50px'}
-              =icon_link_to("", "#row#{event_index}_#{index}", ' icon-zoom-in', '', '', {'data-toggle' => 'modal'})
-              =render :partial => "imports/shared/inspect_modal", :locals => {:row => row, :index => "#{event_index}_#{index}", :keys => ParsedRow::EVENT_FIELDS.keys }
+    %center
+      .alert.alert-info
+        Import previews are temporarily not available.  
+        %br
+        You can still apporve your import by clicking the green "Approve" button above.
