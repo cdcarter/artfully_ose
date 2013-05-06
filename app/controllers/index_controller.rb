@@ -10,11 +10,6 @@ class IndexController < ArtfullyOseController
     redirect_to root_path
   end
 
-  def recent_activity
-    @recent_actions = Action.recent(current_user.current_organization).where('import_id is null').page(params[:page]).per_page(10)
-    render 'index/_recent_activity', :layout => false
-  end
-
   def dashboard
     if current_user.is_in_organization?
       @events = current_user.current_organization.events.includes(:shows, :venue).order('updated_at DESC').limit(4)

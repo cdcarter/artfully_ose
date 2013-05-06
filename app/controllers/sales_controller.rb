@@ -32,6 +32,7 @@ class SalesController < ArtfullyOseController
 
     unless @sale.errors.empty?
       @sale.error = "#{@sale.errors.full_messages.to_sentence.capitalize}."
+      ExpireTicketJob.new(@sale.cart.tickets).perform
     end
     
     render :json => @sale.as_json
