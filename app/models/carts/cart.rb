@@ -6,6 +6,7 @@ class Cart < ActiveRecord::Base
   after_destroy :clear!
   before_validation :set_token
   attr_accessor :special_instructions
+  attr_accessible :token, :reseller_id
 
   validates :token,
             :presence => true,
