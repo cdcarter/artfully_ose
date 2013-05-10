@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    artfully_ose (1.1.0.rc2)
+    artfully_ose (1.1.0)
       active_model_serializers (= 0.6.0)
       activemerchant
       activerecord-import (= 0.2.9)
