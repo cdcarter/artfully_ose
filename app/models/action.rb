@@ -15,8 +15,10 @@ class Action < ActiveRecord::Base
   set_watch_for :occurred_at, :local_to => :organization
 
   def self.for_organization(organization)
+    #Skipping whitelisting because we're playing on our home field
     Kernel.const_get(self.name.camelize).new({:occurred_at  => DateTime.now.in_time_zone(organization.time_zone), 
-                :organization => organization})
+                                              :organization => organization},
+                                              :without_protection => true)
   end
 
   #
