@@ -207,14 +207,14 @@ class Person < ActiveRecord::Base
     Action.where({ :person_id => id }).order('occurred_at desc').select{|a| a.unstarred?}
   end
   
-  #
-  # We're overriding this in order to excapsulate what is needed to
-  # find a unique person
-  #
-  # DO NOT CALL THIS METHOD WITH A BLANK EMAIL
-  #
-  def self.first_or_create(email, organization, attributes=nil, options ={}, &block)
-    Person.where(:email => email).where(:organization_id => organization.id).first_or_create(attributes, options, &block)
+  def self.first_or_create(attributes=nil, options ={}, &block)
+    attributes[:organization_id] ||= attributes[:organization].try(:id)
+    raise(ArgumentError, "You must include an organization when searching for people") if attributes[:organization_id].blank?
+    return Person.create(attributes, options, &block)                                  if attributes[:email].blank?
+    
+    attributes.delete(:organization)
+    
+    Person.where(:email => attributes[:email]).where(:organization_id => attributes[:organization_id]).first || Person.create(attributes, options, &block) 
   end
 
   #
@@ -222,6 +222,7 @@ class Person < ActiveRecord::Base
   # .first_name, .last_name, and .email
   #
   def self.find_or_create(customer, organization)
+    warn "[DEPRECATION] find_or_create will be removed in a future release. Please use first_or_create"
     
     #TODO: Yuk
     if (customer.respond_to? :person_id) && (!customer.person_id.nil?)

@@ -42,7 +42,7 @@ class EventsImport < Import
     if !attach_person(parsed_row).person_info
       person = self.organization.dummy
     elsif !parsed_row.email.blank?
-      person = Person.first_or_create(parsed_row.email, self.organization, parsed_row.person_attributes) do |p|
+      person = Person.first_or_create({:email => parsed_row.email, :organization => self.organization}.merge(parsed_row.person_attributes), {}) do |p|
         p.import = self
       end
     else    

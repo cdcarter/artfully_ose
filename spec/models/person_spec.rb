@@ -308,6 +308,62 @@ describe Person do
       subject.should_not be_valid
     end
   end
+
+  describe "the preferred way to find people" do
+    let(:person)       { FactoryGirl.create(:person) }
+    let(:organization) { person.organization }
+
+    it "should return a new person if an email address is not included" do
+      attrs = { :first_name => person.first_name, :organization_id => organization.id }
+      @new_person = Person.first_or_create(attrs, {})
+      @new_person.first_name.should eq attrs[:first_name]
+      @new_person.id.should_not be_nil
+      @new_person.should_not eq person
+    end
+
+    it "should raise an argument error if caller doesn't include an organization or an organization_id" do
+      attrs = { :email => person.email }
+      expect { Person.first_or_create(attrs, {}) }.should raise_error ArgumentError
+    end
+    
+    it "should return a new person if the person isn't found" do
+      attrs = { :email => "unknown@example.com", :organization_id => organization.id }
+      @new_person = Person.first_or_create(attrs, {})
+      @new_person.should_not eq person
+      @new_person.email.should eq "unknown@example.com"
+      @new_person.id.should_not be_nil
+      
+      attrs = { :email => "another@example.com", :organization => organization }
+      @new_person = Person.first_or_create(attrs, {})
+      @new_person.should_not eq person
+      @new_person.email.should eq "another@example.com"
+      @new_person.id.should_not be_nil
+    end
+
+    it "should find a person matching all the criteria" do
+      attrs = { :email => person.email, :organization_id => organization.id }
+      Person.should_not_receive(:new)
+      Person.should_not_receive(:create)
+      @existing_person = Person.first_or_create(attrs, {})
+      @existing_person.should eq person
+    end
+
+    it "should find a person email and organization" do
+      attrs = { :email => person.email, :organization_id => organization.id }
+      Person.should_not_receive(:new)
+      Person.should_not_receive(:create)
+      @existing_person = Person.first_or_create(attrs, {})
+      @existing_person.should eq person
+    end
+    
+    it "can find people with an Organization" do
+      attrs = { :email => person.email, :organization => organization }
+      Person.should_not_receive(:new)
+      Person.should_not_receive(:create)
+      @existing_person = Person.first_or_create(attrs, {})
+      @existing_person.should eq person
+    end
+  end
   
   describe "#find_or_create" do
     before(:each) do
