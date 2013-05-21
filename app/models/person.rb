@@ -171,6 +171,40 @@ class Person < ActiveRecord::Base
   def lifetime_ticket_value
     self.lifetime_value - self.lifetime_donations
   end
+
+  #
+  # Update self's fields with absorbee's fields where self.field is not nil
+  # We use this when importing for the "our db wins" conflict resolution
+  #
+  # Absorbee will be unchanged
+  #
+  # Addresses will be copied.
+  # Phones will be ammended.
+  # Tags will be ammended.
+  # orders and tickets will not be copied. 
+  #
+  def update_from_import(absorbee)
+    ParsedRow.new([], []).person_attributes.keys.each do |key|
+      if self.send(key).blank?
+        self.send("#{key}=", absorbee.send(key))
+      end
+    end
+
+    absorbee.tag_list.each do |t|
+      self.tag_list << t unless self.tag_list.include? t
+    end
+
+    if self.address.blank?
+      self.address.try(:destroy)
+      self.address = absorbee.address 
+    end
+
+    absorbee.phones.each do |phone|
+      self.phones << phone if self.phone_missing?(phone.number)
+    end
+
+    self
+  end
   
   def self.find_by_email_and_organization(email, organization)
     return nil if email.blank? 
@@ -210,11 +244,21 @@ class Person < ActiveRecord::Base
   def self.first_or_create(attributes=nil, options ={}, &block)
     attributes[:organization_id] ||= attributes[:organization].try(:id)
     raise(ArgumentError, "You must include an organization when searching for people") if attributes[:organization_id].blank?
-    return Person.create(attributes, options, &block)                                  if attributes[:email].blank?
     
     attributes.delete(:organization)
+    return Person.create(attributes, options, &block)                                  if attributes[:email].blank?
     
     Person.where(:email => attributes[:email]).where(:organization_id => attributes[:organization_id]).first || Person.create(attributes, options, &block) 
+  end
+  
+  def self.first_or_initialize(attributes=nil, options ={}, &block)
+    attributes[:organization_id] ||= attributes[:organization].try(:id)
+    raise(ArgumentError, "You must include an organization when searching for people") if attributes[:organization_id].blank?
+    
+    attributes.delete(:organization)
+    return Person.new(attributes, options, &block)                                     if attributes[:email].blank?
+    
+    Person.where(:email => attributes[:email]).where(:organization_id => attributes[:organization_id]).first || Person.new(attributes, options, &block) 
   end
 
   #
@@ -262,11 +306,15 @@ class Person < ActiveRecord::Base
     true
   end
 
+  def phone_missing?(phone_number)
+    phones.where("number = ?", phone_number).empty?
+  end
+
   #
   # Will add a phone number ot this record if the number doesn't already exist
   #
   def add_phone_if_missing(new_phone)
-    if (!new_phone.blank? and phones.where("number = ?", new_phone).empty?)
+    if (!new_phone.blank? and phone_missing?(new_phone))
       phones.create(:number => new_phone, :kind => "Other")
     end
   end

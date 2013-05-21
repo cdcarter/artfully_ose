@@ -75,6 +75,15 @@
   text-align:center;
 }
 
+.modal .modal-body textarea.block {
+  width: 520px;
+  display: block;
+}
+
+.modal > form {
+  margin-bottom: 0;
+}
+
 .modal-footer div {
   display: inline;
 }
@@ -308,4 +317,13 @@ input[type="submit"].btn-block,
 input[type="reset"].btn-block,
 input[type="button"].btn-block {
   width: 100%;
+}
+
+.dropdown .dropdown-menu .disabled,
+.dropdown .dropdown-menu .disabled:visited ,
+.dropdown .dropdown-menu .disabled:active,
+.dropdown .dropdown-menu .disabled:hover {
+    background-color: #efefef !important;
+    color: #7B7B7B !important;
+    cursor: default;
 }

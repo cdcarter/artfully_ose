@@ -10,7 +10,8 @@
           = gravatar_image_tag(current_user.email, :alt => 'User icon', :class => 'dashboard-grav', :gravatar => { :size => 64 })
         .span8
           - if current_user.is_in_organization?          
-            %b= current_user.email
+            %b= "#{truncate(current_user.email, :length => 28, :separator => ' ', :omission => '...')}"
+
             = link_to "Account Administration", organization_path(current_user.current_organization)
             = link_to "Sign Out", destroy_user_session_path
           - else

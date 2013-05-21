@@ -10,7 +10,7 @@ class Order < ActiveRecord::Base
   #This is a lambda used to by the items to calculate their net
   attr_accessor :per_item_processing_charge
 
-  attr_accessible :person_id, :organization_id, :person, :organization, :details
+  attr_accessible :person_id, :organization_id, :person, :organization, :details, :notes
 
   belongs_to :person
   belongs_to :organization
@@ -81,6 +81,15 @@ class Order < ActiveRecord::Base
   end
   include Ext::DelayedIndexing
 
+  comma do
+    id("Order")
+    created_at_local_to_organization("Time")
+    person {|person| person.to_s}
+    payment_method("Method")
+    ticket_details("Details")
+    total {|total| "$#{total.to_i / 100.00}"} # Can't use number_as_cents here, comma doesn't have access to that yet.
+  end
+
   def self.in_range(start, stop, organization_id = nil)
     query = after(start).before(stop).includes(:items, :person, :organization).order("created_at DESC")
     if organization_id.present?
@@ -88,6 +97,18 @@ class Order < ActiveRecord::Base
     else
       query
     end
+  end
+
+  def originally_sold_at
+    original_order.created_at
+  end
+
+  def revenue_applies_to(start_date, end_date)
+    start_date < self.created_at && self.created_at < end_date
+  end
+
+  def exchanges
+    tickets.find_all(&:exchanged?)
   end
   
   def artfully?
@@ -106,12 +127,20 @@ class Order < ActiveRecord::Base
     all_items.inject(0) {|sum, item| sum + item.total_price.to_i }
   end
 
+  def non_exchanged_total
+    all_items.reject(&:exchanged?).inject(0) {|sum, item| sum + item.total_price.to_i }
+  end
+
   def nongift_amount
     all_items.inject(0) {|sum, item| sum + item.nongift_amount.to_i }
   end
   
   def destroyable?
     ( (type.eql? "ApplicationOrder") || (type.eql? "ImportedOrder") ) && !is_fafs? && !artfully? && has_single_donation?
+  end
+  
+  def assignable?
+    anonymous_purchase? && parent.nil?
   end
   
   def editable?
@@ -145,8 +174,8 @@ class Order < ActiveRecord::Base
   end
 
   #TODO: Undupe these methods
-  def tickets
-    items.select(&:ticket?)
+  def tickets(reload=false)
+    items(reload).select(&:ticket?)
   end
 
   def all_donations
@@ -203,11 +232,17 @@ class Order < ActiveRecord::Base
   end
 
   def ticket_details
-    discount_string = ""
-    unless discounts_used.empty?
-      discount_string = ", used #{'discount'.pluralize(discounts_used.length)} " + discounts_used.join(",")
+    String.new.tap do |details|
+      if self.tickets.any?
+        details << Ticket.to_sentence(self.tickets.map(&:product))
+      else
+        details << "No tickets"
+      end
+
+      if discounts_used.any?
+        details << ", used #{'discount'.pluralize(discounts_used.length)} " + discounts_used.join(",")
+      end
     end
-    Ticket.to_sentence(self.tickets.map(&:product)) + discount_string
   end
   
   def to_comp!
@@ -315,6 +350,35 @@ class Order < ActiveRecord::Base
 
   def purchase_action_class
     GetAction
+  end
+
+  def anonymous_purchase?
+    person.try(:dummy?) || false
+  end
+
+  def assign_buyer_to_tickets(person)
+    tickets.each {|item| item.assign_person(person) }
+  end
+
+  def assign_person_to_actions(person)
+    actions.all.each do |action|
+      action.person = person
+      action.save!
+    end
+  end
+
+  def assign_person(person, create_actions = true)
+    if anonymous_purchase? && !person.new_record?
+      transaction do
+        self.person = person
+        save!
+        assign_person_to_actions(person)
+        assign_buyer_to_tickets(person)
+        children.each do |child_order|
+          child_order.assign_person(person, false)
+        end
+      end
+    end
   end
 
   private

@@ -32,7 +32,9 @@ class GatewayTransaction < ActiveRecord::Base
   end
 
   def clean
-    unless self.response.params.nil? || self.response.params.fetch("braintree_transaction",{}).fetch("credit_card_details", {}).fetch("masked_number", nil).nil?
+    unless (self.response.params.nil? || 
+            self.response.params["braintree_transaction"].nil? || 
+            self.response.params.fetch("braintree_transaction",{}).fetch("credit_card_details", {}).fetch("masked_number", nil).nil?)
       self.response.params["braintree_transaction"]["credit_card_details"]["masked_number"] = nil
       self.response.params["braintree_transaction"]["credit_card_details"]["bin"] = nil
     end

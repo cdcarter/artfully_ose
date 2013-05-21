@@ -4,7 +4,7 @@ class ImportsController < ArtfullyOseController
   before_filter :set_import_type
 
   def index
-    @imports = organization.imports.order('created_at desc').all
+    @imports = organization.imports.includes(:user, :organization).order('created_at desc').all
   end
 
   def approve
@@ -20,12 +20,15 @@ class ImportsController < ArtfullyOseController
 
     #
     # Building an import preview was just murdering us. The problem is way down in Array.index in parsed_row.load_value.
-    # Temporarily shutting it off.
+    # Temporarily shutting it off for > 1000
     #
-    # if @import.status == "pending"
-    #   @parsed_rows = @import.parsed_rows.paginate(:page => params[:page], :per_page => 50)
-    # end
-    @people = Person.where(:import_id => @import.id).paginate(:page => params[:page], :per_page => 50) unless @import.id.nil?
+    @under_limit = @import.import_rows.count < 1000
+    if @import.status == "pending" && @under_limit
+      @parsed_rows = @import.parsed_rows.paginate(:page => params[:page], :per_page => 50)
+    end
+
+    @people   = Person.where(:import_id => @import.id).paginate(:page => params[:page], :per_page => 50) unless @import.id.nil?
+    @messages = ImportMessage.where(:import_id => @import.id).paginate(:page => params[:messages_page], :per_page => 10) unless @import.id.nil?
   end
 
   def new
@@ -70,11 +73,22 @@ class ImportsController < ArtfullyOseController
       fields = ParsedRow::PEOPLE_FIELDS
     when "donations"
       fields = ParsedRow::DONATION_FIELDS
+    else
+      raise "Unknown import type."
     end
     
     columns = fields.map { |field, names| names.first }
     csv_string = CSV.generate { |csv| csv << columns }
     send_data csv_string, :filename => "Artfully-Import-Template.csv", :type => "text/csv", :disposition => "attachment"
+  end
+
+  def recall
+    @import = organization.imports.find(params[:id])
+    raise "Can't recall imports other than people imports." unless @import.is_a?(PeopleImport)
+
+    Delayed::Job.enqueue RecallImportJob.new(@import.id)
+    flash[:notice] = "The import is currently being recalled. Reload this page to see progress or check back in a few minutes."
+    redirect_to imports_path
   end
 
   protected

@@ -7,4 +7,8 @@
     %li #{number_as_cents(item.price)} - #{item.product.order_summary_description}
   %li 
     %strong #{number_as_cents(action.subject.total||0)} - Total
+  - if action.subject.notes.present?
+    %li
+      %strong Note:
+      = action.subject.notes
 %p= link_to "View order details <i class='icon-share-alt'></i>".html_safe, order_path(action.subject)

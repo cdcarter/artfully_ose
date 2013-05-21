@@ -25,12 +25,12 @@ describe DailyDonationReport do
     subject { report.total }
     context "with only a donation of $10.00" do
       before { order << donation }
-      it { should == "$10.00" }
+      it { should == 1000 }
     end
 
     context "with only a ticket" do
       before { order << ticket }
-      it { should == "$0.00" }
+      it { should == 0 }
     end
 
     context "with a ticket and a donation of $10.00" do
@@ -38,7 +38,7 @@ describe DailyDonationReport do
         order << ticket
         order << donation
       end
-      it { should == "$10.00" }
+      it { should == 1000 }
     end
   end
 
@@ -54,8 +54,8 @@ describe DailyDonationReport do
       it "should look like this array" do
         subject.should == [
           ["Order ID", "Total", "Customer"],
-          [order.id, report.total, order.person],
-          ["Total:", report.total, ""]
+          [order.id, "$10.00", order.person],
+          ["Total:", "$10.00", ""]
         ]
       end
     end
@@ -63,7 +63,7 @@ describe DailyDonationReport do
 
   describe "#footer" do
     subject { report.footer }
-    it { should == ["Total:", report.total, ""] }
+    it { should == ["Total:", "$0.00", ""] }
   end
 
   describe "Row" do

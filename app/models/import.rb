@@ -4,6 +4,7 @@ class Import < ActiveRecord::Base
   include Imports::Processing
 
   has_many :import_errors, :dependent => :delete_all
+  has_many :import_messages, :dependent => :delete_all
   has_many :import_rows, :dependent => :delete_all
   has_many :people, :dependent => :destroy
   has_many :actions, :dependent => :destroy
@@ -17,6 +18,10 @@ class Import < ActiveRecord::Base
   DATE_INPUT_FORMAT = "%m/%d/%Y"
   DATE_INPUT_FORMAT_WITH_TIME = "%m/%d/%Y %l:%M%P"
   
+  def message(row_number=nil, parsed_row=nil, person, message_text)
+    self.import_messages.create({:row_number => row_number, :row_data => parsed_row.try(:row), :person => person, :message => message_text})
+  end
+
   def self.build(type)
     case type
     when "events"
@@ -82,7 +87,11 @@ class Import < ActiveRecord::Base
   
   def rollback
   end
-  
+
+  def recallable?
+    false
+  end
+
   def parsed_rows
     return @parsed_rows if @parsed_rows
     @parsed_rows = []
@@ -120,7 +129,7 @@ class Import < ActiveRecord::Base
 
     self.pending!
     
-  #TODO: Needs to be re-worked to include the row humber in the error
+  #TODO: Needs to be re-worked to include the row number in the error
   rescue CSV::MalformedCSVError => e
     error_message = "There was an error while parsing the CSV document: #{e.message}"
     self.import_errors.create!(:error_message => error_message)
@@ -138,17 +147,15 @@ class Import < ActiveRecord::Base
   end
 
   def attach_person(parsed_row)
-    ip = parsed_row
-    
     person = self.people.build(parsed_row.person_attributes)
     person.organization = self.organization
 
     person.build_address(hash_address(parsed_row))
-    person.tag_list = ip.tags_list.join(", ")
+    person.tag_list = parsed_row.tags_list.join(", ")
 
     1.upto(3) do |n|
-      kind = ip.send("phone#{n}_type")
-      number = ip.send("phone#{n}_number")
+      kind = parsed_row.send("phone#{n}_type")
+      number = parsed_row.send("phone#{n}_number")
       if kind.present? && number.present?
         person.phones << Phone.new(kind: kind, number: number)
       end

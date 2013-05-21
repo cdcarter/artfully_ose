@@ -6,6 +6,8 @@
   = form_tag orders_path, {:method => :get, :class => 'super-search form-search'} do
     = text_field_tag :search, "", :placeholder => "Enter a patron name, event, or order number...", :class => "span6"
     = submit_tag "Search", :class => "btn"
+    - if !params["search"].nil?
+      = submit_tag "Download", :class => "btn"
 
 #orders-table
   - if !params["search"].nil? && @results.empty?

@@ -3,6 +3,7 @@ class Exchange
   include ActiveModel::Validations
 
   attr_accessor :order, :items, :tickets, :service_fee
+  attr_reader :exchange_order
 
   validates_presence_of :order
   validates_length_of :items,   :minimum => 1
@@ -74,5 +75,6 @@ class Exchange
     end
     exchange_order.record_exchange! items
     exchange_order.save!
+    @exchange_order = exchange_order
   end
 end

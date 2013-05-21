@@ -41,32 +41,33 @@
 
 .row
   .span4
-    %p= link_to "Edit #{@person.posessive} Info", '#edit-person', 'data-toggle' => 'modal'
+    -unless @person.dummy?
+      %p= link_to "Edit #{@person.posessive} Info", '#edit-person', 'data-toggle' => 'modal'
 
-    = render @person.address
+      = render @person.address
 
-    %ul
-      - @person.phones.each do |phone|
-        %li
-          %span.muted= phone.kind
-          = phone.number
+      %ul
+        - @person.phones.each do |phone|
+          %li
+            %span.muted= phone.kind
+            = phone.number
 
-    %section#email-subscription
-      %h5 Email Lists
-      = form_for @person do |form|
-        .do-not-email
-          = form.label :do_not_email, :class => "checkbox" do
-            = form.check_box :do_not_email, :class => "checkbox"
-            %span Do Not Email
-        - if @person.organization.kits.mailchimp
-          .mailchimp-list
-            - mailchimp_kit = @person.organization.kits.mailchimp
-            = hidden_field_tag "person[subscribed_lists][]", nil, :id => "person_subscribed_lists_empty"
-            - mailchimp_kit.attached_lists.each do |list|
-              = label_tag "", :class => "checkbox" do
-                = check_box_tag "person[subscribed_lists][]", list[:list_id], @person.subscribed_lists.include?(list[:list_id]), :class => "checkbox mail-chimp-list", :disabled => @person.do_not_email
-                %span= list[:list_name]
-        = form.submit "Save", :class => 'btn hidden'
+      %section#email-subscription
+        %h5 Email Lists
+        = form_for @person do |form|
+          .do-not-email
+            = form.label :do_not_email, :class => "checkbox" do
+              = form.check_box :do_not_email, :class => "checkbox"
+              %span Do Not Email
+          - if @person.organization.kits.mailchimp
+            .mailchimp-list
+              - mailchimp_kit = @person.organization.kits.mailchimp
+              = hidden_field_tag "person[subscribed_lists][]", nil, :id => "person_subscribed_lists_empty"
+              - mailchimp_kit.attached_lists.each do |list|
+                = label_tag "", :class => "checkbox" do
+                  = check_box_tag "person[subscribed_lists][]", list[:list_id], @person.subscribed_lists.include?(list[:list_id]), :class => "checkbox mail-chimp-list", :disabled => @person.do_not_email
+                  %span= list[:list_name]
+          = form.submit "Save", :class => 'btn hidden'
 
   .span8
     #notes

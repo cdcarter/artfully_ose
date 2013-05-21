@@ -5,21 +5,23 @@
 #donations-search
   = form_tag sales_orders_path, :method => :get, :class => 'form-inline' do
     .control-group.well
-      = label_tag :start, "From", :class => "control-label"
-      = text_field_tag :start,"#{l @search.start, :format => :date_for_input}", :readonly => true, :class => 'datepicker input-small'
+      .pull-left
+        = label_tag :start, "From", :class => "control-label"
+        = text_field_tag :start,"#{l @search.start, :format => :date_for_input}", :readonly => true, :class => 'datepicker input-small'
 
-      = label_tag :stop, "To", :class => "control-label"
-      = text_field_tag :stop, "#{l @search.stop, :format => :date_for_input}", :readonly => true, :class => 'datepicker input-small'
+        = label_tag :stop, "To", :class => "control-label"
+        = text_field_tag :stop, "#{l @search.stop, :format => :date_for_input}", :readonly => true, :class => 'datepicker input-small'
 
-      - if @events.present?
-        = label_tag :event_id, nil, :class => "control-label"
-        = raw select_event_for_sales_search @events, :event_id, params[:event_id]
-      - if @event && @shows.present?
-        = label_tag :show_id, nil, :class => "control-label"
-        = raw select_show_for_sales_search @shows, :show_id, params[:show_id]
+        - if @events.present?
+          = label_tag :event_id, nil, :class => "control-label"
+          = raw select_event_for_sales_search @events, :event_id, params[:event_id]
+        - if @event && @shows.present?
+          = label_tag :show_id, nil, :class => "control-label"
+          = raw select_show_for_sales_search @shows, :show_id, params[:show_id]
         
       .pull-right
         = submit_tag "Search", :class => "btn"
+        = submit_tag "Download", :class => "btn"
 
 - if @search.results.present?
 

@@ -78,7 +78,7 @@ class Item < ActiveRecord::Base
   # and the "total_price" is the amount that was transacted (amount + nongift)
   #
   def total_price
-    price + (nongift_amount.nil? ? 0 : nongift_amount.to_i)  
+    price + (nongift_amount.nil? ? 0 : nongift_amount.to_i)
   end
 
   #
@@ -223,7 +223,6 @@ class Item < ActiveRecord::Base
     state.eql? "refunded"
   end
   
-  
   def exchanged?
     state.eql? "exchanged"
   end
@@ -249,6 +248,11 @@ class Item < ActiveRecord::Base
 
     logger.debug("Settling items #{items.collect(&:id).join(',')}")
     self.update_all({:settlement_id => settlement.id, :state => :settled }, { :id => items.collect(&:id)})
+  end
+
+  def assign_person(person)
+    product.buyer = person if ticket?
+    product.save!
   end
 
   private

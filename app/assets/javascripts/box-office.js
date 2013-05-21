@@ -93,6 +93,7 @@ function ticketsInCart(saleJson) {
 $("document").ready(function(){
   
 	disableCheckout()
+  $("#salesperson-alert").hide();
 	
 	//People searching stuff is in inline-people-search.js
 	
@@ -220,6 +221,8 @@ $("document").ready(function(){
   			}
 			if(sale.error != undefined) {
 			  showError(sale.error);
+        resetQuantites();
+        resetPayment();
 		  }
 		});
 
@@ -230,6 +233,12 @@ $("document").ready(function(){
       $("#credit_card_name").val("")
     } else {
       $("#payment-info").removeClass("hidden");
+    }
+
+    if($(this).attr('value') == 'credit_card_swipe'){
+      $("#salesperson-alert").show();
+    } else {
+      $("#salesperson-alert").hide();
     }
     
     if($(this).attr('value') == 'comp') { 

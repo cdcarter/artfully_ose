@@ -265,4 +265,17 @@ describe Item do
       item1.discount.should be_nil
     end
   end
+
+  describe "#assign_person" do
+    let(:old_person) {FactoryGirl.create(:person)}
+    let(:new_person) {FactoryGirl.create(:person)}
+    before do
+      subject.product.buyer = old_person
+      subject.product.save!
+    end
+    it 'should change the person assigned to the item\'s ticket' do
+      subject.assign_person(new_person)
+      subject.product.buyer.should == new_person
+    end
+  end
 end

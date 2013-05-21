@@ -46,7 +46,7 @@ describe Order do
       subject.transaction_id.should be_nil
     end
   end
-  
+
   describe "total" do
     it "should report the prices and non-gift amounts to all items" do
       order = FactoryGirl.build(:order)
@@ -57,9 +57,9 @@ describe Order do
   end
 
   describe "#ticket_summary" do
-    let(:organization)  { FactoryGirl.create(:organization) }
-    let(:show0)         { FactoryGirl.create(:show, :organization => organization) }
-    let(:show1)         { FactoryGirl.create(:show, :organization => organization) }
+    let(:organization) { FactoryGirl.create(:organization) }
+    let(:show0) { FactoryGirl.create(:show, :organization => organization) }
+    let(:show1) { FactoryGirl.create(:show, :organization => organization) }
     let(:tickets0) { 3.times.collect { FactoryGirl.create(:ticket, :show => show0) } }
     let(:tickets1) { 2.times.collect { FactoryGirl.create(:ticket, :show => show1) } }
     let(:donations) { 2.times.collect { FactoryGirl.create(:donation, :organization => organization) } }
@@ -71,19 +71,19 @@ describe Order do
         order << tickets1
         order << donations
       end
-    end   
-    
+    end
+
     it "assigns the organization to the order" do
       subject.organization.should eq organization
-    end 
+    end
 
     it "assembles a ticket summary" do
       subject.ticket_summary.should_not be_nil
       subject.ticket_summary.rows.length.should eq 2
       subject.ticket_summary.rows[0].show.should eq show0
-      subject.ticket_summary.rows[0].tickets.length.should eq tickets0.length   
+      subject.ticket_summary.rows[0].tickets.length.should eq tickets0.length
       subject.ticket_summary.rows[1].show.should eq show1
-      subject.ticket_summary.rows[1].tickets.length.should eq tickets1.length      
+      subject.ticket_summary.rows[1].tickets.length.should eq tickets1.length
     end
   end
 
@@ -93,7 +93,7 @@ describe Order do
       subject.should_receive(:create_purchase_action)
       subject.save
     end
-  
+
     it "generates a valid donation action for each donation" do
       donations = 2.times.collect { FactoryGirl.build(:donation) }
       subject << donations
@@ -105,12 +105,12 @@ describe Order do
       end
     end
   end
-  
+
   describe "generating orders" do
     let(:organization) { FactoryGirl.build(:organization) }
     let(:tickets) { 3.times.collect { FactoryGirl.build(:ticket) } }
     let(:donations) { 2.times.collect { FactoryGirl.build(:donation, :organization => organization) } }
-  
+
     subject do
       Order.new.tap do |order|
         order.for_organization(organization)
@@ -118,23 +118,62 @@ describe Order do
         order << donations
       end
     end
-  
+
     it "assigns the organization to the order" do
       subject.organization.should eq organization
     end
-  
+
     it "creates an item that references each ticket" do
       subject.items.select(&:ticket?).size.should eq tickets.size
       subject.items.select(&:ticket?).each do |item|
         tickets.collect(&:id).should include item.product_id
       end
     end
-  
+
     it "creates an item that references each donation" do
       subject.items.select(&:donation?).size.should eq donations.size
       subject.items.select(&:donation?).each do |item|
         donations.collect(&:id).should include item.product_id
       end
+    end
+  end
+
+  describe "#anonymous_purchase?" do
+    let(:dummy) { FactoryGirl.create(:dummy) }
+    context 'when the purchaser is anonymous' do
+      before do
+        subject.person = dummy
+        subject.save!
+      end
+      it { subject.anonymous_purchase?.should be_true }
+    end
+    context "when the purchaser isn't anonymous" do
+      before do
+        subject.save!
+      end
+      it { subject.anonymous_purchase?.should be_false }
+    end
+  end
+
+  describe "#assign_person" do
+    before do
+      @new_person = FactoryGirl.create(:person)
+      @tickets = 3.times.collect { FactoryGirl.create(:ticket) }
+      Delayed::Worker.new.work_off
+      @actions = subject.actions
+      subject.person = FactoryGirl.create(:dummy)
+      subject << @tickets
+      subject.save!
+      subject.assign_person(@new_person)
+    end
+    it 'should set the associated person' do
+      subject.person.should == @new_person
+    end
+    it 'should set its associated tickets\' buyers' do
+      subject.tickets(true).collect(&:product).all?{|t| t.buyer_id == @new_person.id}.should be_true
+    end
+    it 'should change the associated actions' do
+      @actions.all?{|a| a.person_id == @new_person.id}.should be_true
     end
   end
 end

@@ -16,6 +16,11 @@ class Address < ActiveRecord::Base
     "#{address1} #{address2} #{city} #{state} #{zip} #{country}"
   end
 
+  # Country intentionally omitted
+  def blank?
+    address1.blank? && address2.blank? && city.blank? && state.blank? && zip.blank?
+  end
+
   def is_same_as(addr)
     return address1.eql?(addr.address1) &&
            address2.eql?(addr.address2) &&

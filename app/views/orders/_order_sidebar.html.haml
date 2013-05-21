@@ -1,14 +1,22 @@
-.btn-group.bottom-room
-  =icon_link_to("Receipt", "#receipt", 'icon-envelope', 'btn', '', {'data-toggle' => 'modal'})
-  -if order.editable?
-    =link_to "Edit", edit_contribution_path(order, :format => :html), :class => 'btn', :id => 'edit-order-link', "data-remote" => "true"
-  -else
-    =link_to "Edit", "#", :class => 'btn disabled edit-message'
-    
-  -if order.destroyable?
-    =link_to "Delete", "#confirm-delete", :class => 'btn', 'data-toggle' => 'modal'
-  -else
-    =link_to "Delete", "#", :class => 'btn disabled delete-message'
+-work_with = true if work_with.nil?
+-if work_with
+  %ul
+    %li.dropdown{:id => "#menu#bulkactions"}
+      =icon_link_to('Work with...', "#menu#bulkactions", 'icon-asterisk', 'dropdown-toggle dropdown btn', '')
+      %ul.dropdown-menu
+        %li
+          =link_to "Send Receipt", "#receipt", 'data-toggle' => 'modal'
+        - if order.assignable?
+          %li
+            = link_to "Assign Person", new_order_assignment_path(order)
+        %li
+          -if order.editable?
+            =link_to "Edit Donation", edit_contribution_path(order, :format => :html), :id => 'edit-order-link', "data-remote" => "true"
+        %li
+          =link_to "Edit Order Notes", "#notes", 'data-toggle' => 'modal'
+        %li
+          -if order.destroyable?
+            =link_to "Delete", "#confirm-delete", 'data-toggle' => 'modal'
 
 %ul.kv
   %li
@@ -43,11 +51,15 @@
       .value=order.fa_id
   %li
     %h6.key Details
-    .value #{order.details}
+    .value= order.details
   %li
     %h6.key-full Special Instructions
   %li
-    .value #{order.special_instructions}
+    .value= order.special_instructions
+  %li
+    %h6.key-full Order Notes
+  %li
+    .value= order.notes
     
 #edit-order-popup.modal
   
@@ -81,4 +93,16 @@
       %strong="#{person.email}"
     .modal-footer
       =link_to "Resend Receipt", resend_order_path(order), :class => "btn btn-success"
-      =link_to "Cancel", "#", :class => "btn btn-danger", 'data-dismiss'=>'modal'   
+      =link_to "Cancel", "#", :class => "btn btn-danger", 'data-dismiss'=>'modal'
+
+
+#notes.modal
+  .modal-header
+    .close{'data-dismiss'=>'modal'} x
+    %h3 Edit Order Notes
+  = form_tag order_url(order), :method => :put do
+    .modal-body
+      = text_area_tag "order[notes]", order.notes, :rows => "5", :class => "block"
+    .modal-footer
+      = submit_tag "Save", :class => "btn btn-success"
+      = link_to "Cancel", "#", :class => "btn", 'data-dismiss'=>'modal'

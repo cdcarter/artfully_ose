@@ -91,6 +91,9 @@
   .modal-header
     %h2 Checkout
   .modal-body
+    #salesperson-alert.alert.alert-info
+      Swipe card to complete transaction
+
     #sell-total.total.block
       %h3 Total
       %strong.price= number_as_cents 0
@@ -120,10 +123,9 @@
           %tbody
         
   .modal-footer
+    %input#hack-cc-number.hidden{:name=>'hack-cc-number'}
     %button#sell-button.btn.btn-large.btn-success{:name => 'commit', :label => 'true'}
       Sell
     %button#cancel-button.btn.btn-large
       Cancel
-    %br  
-    %input#hack-cc-number.hidden{:name=>'hack-cc-number'}
 

@@ -37,6 +37,14 @@ module Imports
       self.update_column(:status, "imported")
     end
 
+    def recalling!
+      self.update_column(:status, "recalling")
+    end
+
+    def recalled!
+      self.update_column(:status, "recalled")
+    end
+
     def failed!
       self.update_column(:status, "failed")
     end

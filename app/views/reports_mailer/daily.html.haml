@@ -1,67 +1,61 @@
+- content_for :preview_text do
+  Your Daily Order Report of #{@tix.organization.name} #{l @tix.start_date, :format => :date} #{number_to_currency((@tix.total + @donations.total) / 100.0)}
+
+%h1
+  Daily Total: #{number_to_currency((@tix.total + @donations.total) / 100.0)}
 %h2
-  Your Daily Order Report for
-  = @tix.organization.name
-%h1= @tix.date.to_s(:long)
+  #{@tix.organization.name}: #{l @tix.start_date, :format => :date}
 
 - if ! @tix.rows.empty?
-  %h3 Tickets
-  %table
+  %h3 Tickets: #{number_to_currency(@tix.total / 100.0)}
+  %table.tabular-data{:cellspacing => "0"}
     %tr
-      %th Order #
+      %th Order
       %th Total
       %th Customer
-      %th Details
-      %th.last-child Special Instructions
+      %th.w200 Details
+      %th Special Instructions
     - @tix.rows.each do |row|
       %tr
-        %td.right= link_to row.id, order_url(id: row.id)
-        %td.right= row.total
+        %td.order-number= link_to row.id, order_url(id: row.id)
+        %td.total= row.total
         %td= link_to row.person, person_url(id: row.person_id)
-        %td= row.ticket_details
-        %td.last-child= row.special_instructions
-  %h4
-    Ticket Total:
-    = @tix.total
+        %td.w200= row.ticket_details
+        %td= row.special_instructions
 - else
   %p There were no orders placed.
 
-- if ! @donations.rows.empty?
-  %h3 Donations
-  %table
+
+- if ! @tix.exchange_rows.empty?
+  %h3 Exchanges
+  %table.tabular-data{:cellspacing => "0"}
     %tr
-      %th Order #
+      %th Order
+      %th Customer
+      %th Details
+    - @tix.exchange_rows.each do |row|
+      %tr
+        %td.order-number= link_to row.id, order_url(id: row.id)
+        %td= link_to row.person, person_url(id: row.person_id)
+        %td= row.ticket_details
+
+- if ! @donations.rows.empty?
+  %h3 Donations: #{number_to_currency(@donations.total / 100.0)}
+  %table.tabular-data{:cellspacing => "0"}
+    %tr
+      %th Order
       %th Donation
-      %th.last-child Customer
+      %th Customer
     - @donations.rows.each do |row|
       %tr
-        %td.right= link_to row.id, order_url(id: row.id)
-        %td.right= row.total
-        %td.last-child= link_to row.person, person_url(id: row.person_id)
-  %h4
-    Donation Total:
-    = @donations.total
-- else
+        %td.order-number= link_to row.id, order_url(id: row.id)
+        %td.total= row.total
+        %td= link_to row.person, person_url(id: row.person_id)
+- elsif @tix.organization.has_kit?(:regular_donation)
   %p There were no donations made.
 
-%h2
-  Daily Total:
-  = @tix.daily_total
-
-%small
-  To turn off this daily email report,
-  = link_to "edit your organization here.", edit_organization_url(@tix.organization)
-
-:css
-  .right {
-    text-align: right;
-  }
-  table th {
-    text-align: left;
-  }
-  table td, table th {
-    border-right: 1px solid #999;
-    padding: 8px;
-  }
-  table .last-child {
-    border: none;
-  }
+- content_for :footer do
+  = render :partial => "fine_print"
+  %p
+    To turn off this daily email report,
+    = link_to "edit your organization here.", edit_organization_url(@tix.organization)

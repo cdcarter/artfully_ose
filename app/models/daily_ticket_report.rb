@@ -1,24 +1,26 @@
 class DailyTicketReport
-  attr_accessor :rows, :daily_total, :date, :organization
+  attr_accessor :rows, :exchange_rows, :start_date, :organization
   extend ::ArtfullyOseHelper
 
   def initialize(organization, date=nil)
     @organization = organization
-    @date = date || 1.day.ago.to_date
-    @orders = organization.orders.csv_not_imported.after(@date).before(@date + 1.day) || []
+    @start_date = (date || 1.day.ago).in_time_zone(@organization.time_zone).midnight
+    @end_date = @start_date + 1.day
+    orders = organization.orders.includes(:person, :items => :product)
+    orders = orders.csv_not_imported.after(@start_date).before(@end_date) || []
 
     @rows = []
-    @orders.each do |order|
-      @rows << Row.new(order) unless order.tickets.empty?
+    @exchange_rows = []
+    orders.each do |order|
+      next if order.tickets.empty?
+
+      @exchange_rows  << ExchangeRow.new(order) if order.is_a? ExchangeOrder
+      @rows           << Row.new(order)         if order.revenue_applies_to(@start_date, @end_date)
     end
   end
 
   def total
-    DailyTicketReport.number_to_currency(@orders.sum{|o| o.tickets.sum(&:price)}.to_f/100)
-  end
-
-  def daily_total
-    DailyTicketReport.number_to_currency(@orders.sum(&:total).to_f/100)
+    @rows.collect(&:order).sum{|o| o.tickets.reject(&:exchanged?).sum(&:price)}
   end
 
   def header
@@ -30,22 +32,39 @@ class DailyTicketReport
   end
 
   def footer
-    ["Total:", total, "", "", ""]
+    ["Total:", DailyTicketReport.number_to_currency(total/100.0), "", "", ""]
   end
 
   class Row
-    attr_accessor :id, :ticket_details, :total, :person, :person_id, :special_instructions
+    attr_accessor :id, :ticket_details, :total, :person, :person_id, :special_instructions, :order
     def initialize(order)
+      @order = order
       @id = order.id
-      @ticket_details = order.ticket_details
-      @total = DailyTicketReport.number_to_currency(order.tickets.sum(&:price).to_f/100)
+      @ticket_details = create_ticket_details
+      @total = calculate_total
       @person = order.person
       @person_id = order.person.id
       @special_instructions = order.special_instructions
     end
 
+    def create_ticket_details
+      @order.ticket_details
+    end
+
+    def calculate_total
+      DailyTicketReport.number_to_currency(@order.tickets.reject(&:exchanged?).sum(&:price).to_f/100)
+    end
+
     def to_a
       [id, total, person, ticket_details, special_instructions]
+    end
+  end
+
+  class ExchangeRow < Row
+    include ActionView::Helpers::TextHelper
+
+    def calculate_total
+      DailyTicketReport.number_to_currency(@order.tickets.find_all(&:exchanged?).sum(&:price).to_f/100)
     end
   end
 end

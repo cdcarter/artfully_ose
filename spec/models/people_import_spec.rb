@@ -1,51 +1,49 @@
 require 'spec_helper'
 
 describe PeopleImport do
+  disconnect_sunspot
+
   context "an import with 3 contacts" do
     before do
       @headers = ["First Name", "Last Name", "Email"]
       @rows = [%w(John Doe john@does.com), %w(Jane Wane wane@jane.com), %w(Foo Bar foo@bar.com)]
-      @import = FactoryGirl.create(:people_import)
+      @import = FactoryGirl.create(:people_import, :organization => FactoryGirl.create(:organization))
       @import.stub(:headers) { @headers }
       @import.stub(:rows) { @rows }
+      @import.import
+      @import.reload
     end
   
     it "should import a total of three records" do
-      @person = Person.new
-      @person.stub(:save).and_return(true)
-      @address = Address.new
-      @address.stub(:save).and_return(true)
-      @import.should_receive(:attach_person).exactly(3).times.and_return(@person)
-      @import.import
       @import.import_errors.should be_empty
+      @import.people.length.should eq 3
     end
-  end
 
-  context "an example import from a customer" do
-    before :each do
-      Sunspot.session = Sunspot::Rails::StubSessionProxy.new(Sunspot.session)
-      @csv_filename = "#{File.dirname(__FILE__)}/../support/patron-import.csv"
-      @import = FactoryGirl.create(:people_import, s3_key: @csv_filename)
-      @import.cache_data
-      @import.import
-    end
-  
-    it "should have 359 import rows" do
-      @import.import_rows.count.should == 358
-    end
-  
-    it "should successfully import 0 people" do
-      Person.where(:import_id => @import.id).count.should == 0
-    end
-  
-    it "should be failed" do
-      @import.status.should == "failed"
-    end
-  
-    it "should have a duplicate email error" do
-      #There are two errors in the file, but we are tossing exceptions and blow up after the first one
-      @import.import_errors.count.should == 1
-      @import.import_errors.first.error_message.should_not be_nil
+    describe "#recall" do
+      it 'should return true' do
+        @import.recall.should == true
+      end
+
+      it 'should delete the people' do
+        @import.recall
+        @import.people(true).all?{|p| p.deleted_at != nil}.should be_true
+      end
+
+      context "when a person has an action" do
+        before do
+          FactoryGirl.create(:get_action, :person => @import.people.first)
+        end
+
+        it 'should return false' do
+          @import.recall.should == false
+        end
+
+        it 'should not delete the first person' do
+          @import.recall
+          @import.people(true).first.deleted_at.should be_nil
+          @import.people.count.should == 1
+        end
+      end
     end
   end
   
@@ -58,9 +56,9 @@ describe PeopleImport do
       @parsed_row = ParsedRow.parse(@headers, @row)
     end
     
-    it "should not validate a row if a customer already exists with this email in this org" do
+    it "should be valid even if a person with this email exists in this org" do
       FactoryGirl.create(:person, :email => "john@does.com", :organization => @import.organization)
-      lambda { @import.row_valid? @parsed_row }.should raise_error Import::RowError
+      lambda { @import.row_valid? @parsed_row }.should_not raise_error Import::RowError
     end
     
     it "should validate if the person is valid" do
@@ -93,10 +91,28 @@ describe PeopleImport do
     
     it "sets the address on the person"
     
-    it "should throw an error when a person with an email already exists" do
-      @existing_person = FactoryGirl.create(:person, :email => "john@does.com", :organization => @import.organization)
-      parsed_row = ParsedRow.parse(@headers, @rows.first)
-      lambda { @import.create_person(parsed_row) }.should raise_error Import::RowError
+    describe "when an email appears in the same file twice" do
+      it "should use information from the latest row" do
+
+      end
+    end
+
+    describe "when the email address exists" do
+      before(:each) do
+        @existing_person = FactoryGirl.create(:person, :email => "john@does.com", :organization => @import.organization)
+        @parsed_row = ParsedRow.parse(@headers, @rows.first)
+      end
+
+      it "should merge the person if the email exists" do
+        Person.any_instance.should_receive(:update_from_import).with(any_args())
+        @import.create_person(@parsed_row)
+      end
+
+      it "should create an import_message" do
+        @import.create_person(@parsed_row)
+        @import.import_messages.length.should eq 1
+        @import.import_messages.first.person.should eq @existing_person
+      end
     end
   end
 end

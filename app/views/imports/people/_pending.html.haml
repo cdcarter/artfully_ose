@@ -17,9 +17,29 @@
           Click "Approve" to import this data into Artful.ly
         .span3
           = link_to "Approve", approve_import_path(import), :data => {:confirm => "Are you sure you want to approve this import?"}, :class => "btn btn-success btn-large"
-    
-    %center
-      .alert.alert-info
-        Import previews are temporarily not available.  
-        %br
-        You can still apporve your import by clicking the green "Approve" button above.
+    -if @under_limit
+      %table.table.table-bordered.table-striped
+        %tr
+          %th Email
+          %th First
+          %th Last
+          %th Company
+          %th Website
+          %th 
+        - @parsed_rows.each_with_index do |row, index|
+          %tr
+            %td=row.email
+            %td=row.first
+            %td=row.last
+            %td=row.company
+            %td=row.website
+            %td
+              =icon_link_to("", "#row#{index}", ' icon-zoom-in', '', '', {'data-toggle' => 'modal'})
+              =render :partial => "imports/shared/inspect_modal", :locals => {:row => row, :index => index, :keys => ParsedRow::PEOPLE_FIELDS.keys}
+      = will_paginate @parsed_rows
+    -else    
+      %center
+        .alert.alert-info
+          Import previews are temporarily not available.  
+          %br
+          You can still apporve your import by clicking the green "Approve" button above.

@@ -18,13 +18,13 @@
     %table.table.table-bordered.table-striped.docs
       %tr 
         %td.field-slim First 
-        %td The first name of the person
+        %td The first name of the person.
       %tr 
         %td.field-slim Last
-        %td The last name of the person
+        %td The last name of the person.
       %tr 
         %td.field-slim Email
-        %td The email address of the person  
+        %td="The email address of the person. People records in Artful.ly have unique email addresses, so if you're importing an email address that has already been assigned to a person, we'll merge the data for you. #{link_to "Read more", "#merging", {'data-toggle' => 'modal'}}".html_safe  
     
     %h3 Optional Fields
     %table.table.table-bordered.table-striped.docs
@@ -87,7 +87,7 @@
         %td The person's web address on LinkedIn
       %tr
         %td.field-slim Do Not Email 
-        %td Indicate that this person is not to receive email communication from your organization.  This is for your organization's internal use only.  The person will still receive purchase and donation receipts from Artful.ly.
+        %td Indicate that this person is not to receive email communication from your organization.  Use "true" in this column if the person should not be emailed. This is for your organization's internal use only. The person will still receive purchase and donation receipts from Artful.ly.
       %tr
         %td.field-slim Tags
         %td
@@ -118,3 +118,20 @@
           :acl => "public-read",
           :max_filesize => 50.megabytes,
           :submit_button => '<input type="hidden" value="people"/><div class="cancel-submit"><input id="import_submit" class="btn" name="commit" type="submit" value="Import"></div>'
+
+#merging.modal
+  .modal-header
+    .close{'data-dismiss'=>'modal'} x
+    %h3 Merging People
+  .modal-body
+    %p
+      If you're importing a record whose email address already exists in Artful.ly, Artful.ly will record the new information only when it does not exist already in Artful.ly. New data will not overwrite existing data.
+      %p
+      For example, consider that jim@example.com is in Artful.ly with a first name of Jim but no last name. If you import a file with jim@example.com in it, and a first name of Bill and a last name of Smith, the merged record will be:
+      %p
+        %ul
+          %li Email: jim@example.com
+          %li First: Jim
+          %li Last:  Smith
+  .modal-footer
+    %button.btn.btn-success{'data-dismiss'=>'modal'} OK

@@ -223,51 +223,113 @@ describe Cart do
 
   describe ".find_or_create" do
     let!(:requested_token) { nil }
-    let(:found_cart) { Cart.find_or_create(requested_token, nil) }
+    let!(:requested_reseller_id) { nil }
+    let(:found_cart) { Cart.find_or_create(requested_token, requested_reseller_id) }
     context "when no cart token is supplied" do
       it "should raise a not found exception" do
         expect { found_cart }.to raise_error(ActiveRecord::RecordNotFound)
       end
     end
-    context "when a non-existent, invalid cart token is supplied" do
-      let!(:requested_token) { "no such token" }
-      it "should raise an exception" do
-        expect { found_cart }.to raise_error(ActiveRecord::RecordInvalid)
-      end
-    end
-    context "when a non-existent, valid cart token is supplied" do
-      let!(:requested_token) { 'f0eaa98acc5e600fb71dcf8affca2061f0eaa98acc5e600fb71dcf8affca2061' }
-      it "should return a new cart" do
-        found_cart.should be_a_kind_of(Cart)
-      end
-      it "should have the same token" do
-        found_cart.token.should eql(requested_token)
-      end
-    end
-    context "when the existing cart token is supplied" do
-      let(:requested_token) { existing_cart.token }
-      let!(:existing_cart) { FactoryGirl.create :cart_with_items }
-      it "should return the cart that has that token" do
-        found_cart.token.should eql(requested_token)
-        found_cart.items.should_not be_empty
-      end
-      context "and when the original cart was completed" do
-        before do
-          existing_cart.approve!
+    context "when a reseller id is not supplied" do
+      context "when a non-existent, invalid cart token is supplied" do
+        let!(:requested_token) { "no such token" }
+        it "should raise an exception" do
+          expect { found_cart }.to raise_error(ActiveRecord::RecordInvalid)
         end
-        it "should give us an empty cart" do
-          found_cart.items.should be_empty
+      end
+      context "when a non-existent, valid cart token is supplied" do
+        let!(:requested_token) { 'f0eaa98acc5e600fb71dcf8affca2061f0eaa98acc5e600fb71dcf8affca2061' }
+        it "should return a new cart" do
+          found_cart.should be_a_kind_of(Cart)
         end
-        it "should give us a cart with the proper token" do
+        it "should have the same token" do
           found_cart.token.should eql(requested_token)
         end
-        it "should have removed the token from the original cart object" do
-          found_cart
-          existing_cart.reload
-          existing_cart.token.should_not eql(requested_token)
+        it "should not be a reseller cart" do
+          found_cart.should_not be_a_kind_of(Reseller::Cart)
         end
-        it "should leave the items in the original cart" do
-          existing_cart.items.should_not be_empty
+      end
+      context "when the existing cart token is supplied" do
+        let(:requested_token) { existing_cart.token }
+        let!(:existing_cart) { FactoryGirl.create :cart_with_items }
+        it "should return the cart that has that token" do
+          found_cart.token.should eql(requested_token)
+          found_cart.items.should_not be_empty
+        end
+        it "should not be a reseller cart" do
+          found_cart.should_not be_a_kind_of(Reseller::Cart)
+        end
+        context "and when the original cart was completed" do
+          before do
+            existing_cart.approve!
+          end
+          it "should give us an empty cart" do
+            found_cart.items.should be_empty
+          end
+          it "should give us a cart with the proper token" do
+            found_cart.token.should eql(requested_token)
+          end
+          it "should have removed the token from the original cart object" do
+            found_cart
+            existing_cart.reload
+            existing_cart.token.should_not eql(requested_token)
+          end
+          it "should leave the items in the original cart" do
+            existing_cart.items.should_not be_empty
+          end
+        end
+      end
+    end
+    context "when a reseller id is supplied" do
+      let!(:requested_reseller_id) { "2" }
+      context "when a non-existent cart token is supplied" do
+        let!(:requested_token) { 'f0eaa98acc5e600fb71dcf8affca2061f0eaa98acc5e600fb71dcf8affca2061' }
+        it "should return a new cart" do
+          found_cart.should be_a_kind_of(Cart)
+        end
+        it "should have the same token" do
+          found_cart.token.should eql(requested_token)
+        end
+        it "should be a reseller cart" do
+          found_cart.should be_a_kind_of(Reseller::Cart)
+        end
+        it "should have the right reseller id" do
+          found_cart.reseller_id.should eql(requested_reseller_id)
+        end
+      end
+      context "when an existing cart token is supplied" do
+        let(:requested_token) { existing_cart.token }
+        let!(:existing_cart) { FactoryGirl.create :cart_with_items,
+                                                  :reseller_id => requested_reseller_id,
+                                                  :type => "Reseller::Cart" }
+        it "should return the cart that has that token" do
+          found_cart.token.should eql(requested_token)
+          found_cart.items.should_not be_empty
+        end
+        it "should be a reseller cart" do
+          found_cart.should be_a_kind_of(Reseller::Cart)
+        end
+        it "should have the right reseller id" do
+          found_cart.reseller_id.should eql(requested_reseller_id)
+        end
+        context "and when the original cart was completed" do
+          before do
+            existing_cart.approve!
+          end
+          it "should give us an empty cart" do
+            found_cart.items.should be_empty
+          end
+          it "should give us a cart with the proper token" do
+            found_cart.token.should eql(requested_token)
+          end
+          it "should have removed the token from the original cart object" do
+            found_cart
+            existing_cart.reload
+            existing_cart.token.should_not eql(requested_token)
+          end
+          it "should leave the items in the original cart" do
+            existing_cart.items.should_not be_empty
+          end
         end
       end
     end
@@ -285,6 +347,38 @@ describe Cart do
       expect {subject.reset_prices_on_tickets}.to change(subject, :total).by(discount_amount)
     end
   end
+
+  # # TODO: Fix these specs!
+  # describe ".generate_donations" do
+  #   let(:tickets) { 2.times.collect { FactoryGirl.build(:ticket) } }
+  #   let(:organizations) { tickets.collect(&:organization) }
+
+  #   before(:each) do
+  #     organizations.each do |org|
+  #       rdk = RegularDonationKit.new
+  #       rdk[:state] = :activated
+  #       org.kits << rdk
+  #     end
+  #   end
+
+  #   it "should return a donation for the producer of a single ticket in the cart" do
+  #     subject.tickets << tickets
+  #     donations = subject.generate_donations
+  #     donations.each do |donation|
+  #       organizations.should include donation.organization
+  #     end
+  #   end
+
+  #   it "should not return any donations if there are no tickets" do
+  #     subject.generate_donations.should be_empty
+  #   end
+
+  #   it "should return one donation if the tickets are for the same producer" do
+  #     tickets.each { |ticket| ticket.organization = organizations.first }
+  #     subject.stub(:tickets).and_return(tickets)
+  #     subject.generate_donations.should have(1).donation
+  #   end
+  # end
 
   describe ".can_hold?" do
     let(:ticket) { FactoryGirl.build :ticket }

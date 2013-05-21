@@ -148,6 +148,7 @@ Rails.application.routes.draw do
   end
 
   resources :orders do
+    resource :assignment, :only => [ :new, :create ]
     collection do
       get :sales
     end
@@ -167,6 +168,7 @@ Rails.application.routes.draw do
   resources :imports do
     member do
       get :approve
+      get :recall
     end
     collection do
       get :template

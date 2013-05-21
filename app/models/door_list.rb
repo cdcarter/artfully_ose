@@ -17,7 +17,7 @@ class DoorList
   private
 
     class Item
-      attr_accessor :ticket, :buyer, :special_instructions, :payment_method
+      attr_accessor :ticket, :buyer, :special_instructions, :notes, :payment_method
       
       comma do
         buyer("First Name") { |buyer| buyer.first_name }
@@ -26,12 +26,14 @@ class DoorList
         ticket("Section") { |ticket| ticket.section.name }
         ticket("Price") { |ticket| DoorList.number_as_cents ticket.sold_price }
         ticket("Special Instructions") { |ticket| ticket.special_instructions }
+        ticket("Notes") { |ticket| ticket.notes }
       end
 
       def initialize(ticket, buyer)
         self.ticket = ticket
         self.buyer = buyer
         self.special_instructions = ticket.special_instructions
+        self.notes = ticket.notes
         self.payment_method = ticket.sold_item.try(:order).try(:payment_method)
       end
 

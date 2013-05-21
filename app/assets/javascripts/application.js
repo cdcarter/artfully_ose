@@ -102,11 +102,18 @@ $(document).ready(function() {
   }
 
 	$('.help').popover();
-	$('.edit-message, .delete-message').popover({title: "Editing / Deleting", content: "We can only edit or delete manually entered donations.", placement: "bottom"});
+	$('.edit-message, .delete-message').popover({title: "Editing / Deleting", content: "We can only edit or delete manually entered donations.", placement: "right"});
 	
 	$('.dropdown-toggle').dropdown();
 	
 	$('#nag').modal('show');
+
+  $('.dropdown .dropdown-menu .disabled').on('click', function(e) {
+    e.preventDefault();
+  });
+	
+	/*********** NEW ARTFULLY JS ************/
+  
   $('.artfully-tooltip').tooltip();
 	
 	/*********** EXISTING ARTFUL.LY JS ******/

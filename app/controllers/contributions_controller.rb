@@ -1,9 +1,18 @@
 class ContributionsController < ArtfullyOseController
   def index
     authorize! :manage, Order
+    request.format = :csv if params[:commit] == "Download"
 
     @search = DonationSearch.new(params[:start], params[:stop], current_user.current_organization) do |results|
-      results.sort{|a,b| b.created_at <=> a.created_at }.paginate(:page => params[:page], :per_page => 25)
+      results.sort!{|a,b| b.created_at <=> a.created_at }
+      respond_to do |format|
+        format.html { results.paginate(:page => params[:page], :per_page => 25) }
+        format.csv do
+          filename = "Artfully-Donations-Export-#{DateTime.now.strftime("%m-%d-%y")}.csv"
+          csv_string = results.collect(&:donations).flatten.to_comma(:donation)
+          send_data csv_string, :filename => filename, :type => "text/csv", :disposition => "attachment"
+        end
+      end
     end
   end
 

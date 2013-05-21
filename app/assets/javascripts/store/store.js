@@ -28,30 +28,34 @@ $(document).ready(function(){
     var errorMessage = $('#loading-container #error')
     var date = $(this).attr('data-date');
     var targetLi = $("ul#shows li[data-date='" + date + "']");
-    var showUuid = targetLi.attr('data-show-uuid');
 
     targetLi.hide();
 
-    $.ajax({
-      url: "/store/shows/" + showUuid,
-      beforeSend: function ( xhr ) {
-        //can't use show() because it starts out hidden and show() won't work with that
-        errorMessage.css('display', 'none')
-        loadingMessage.css('visibility', 'visible')
-        
-        $("ul#shows li").parent().attr('style','opacity:.4')
-      }
-    }).done(function ( data ) {
-      loadingMessage.css('visibility', 'hidden')
-      $("ul#shows li").parent().attr('style','opacity:1')
-      $("ul#shows li").hide();  
-      targetLi.html(data);  
-      targetLi.fadeIn('slow'); 
-      hookupAddToCart();
-    }).error(function ( data ) {
-      loadingMessage.css('visibility', 'hidden')
-      errorMessage.css('display', 'block')
-      errorMessage.css('visibility', 'visible')
+    $.each(targetLi, function (index, targetLiEl) {
+      targetLiEl = $(targetLiEl)
+      var showUuid = targetLiEl.attr('data-show-uuid');
+
+      $.ajax({
+        url: "/store/shows/" + showUuid,
+        beforeSend: function ( xhr ) {
+          //can't use show() because it starts out hidden and show() won't work with that
+          errorMessage.css('display', 'none')
+          loadingMessage.css('visibility', 'visible')
+          
+          $("ul#shows li").parent().attr('style','opacity:.4')
+        }
+      }).done(function ( data ) {
+        loadingMessage.css('visibility', 'hidden')
+        $("ul#shows li").parent().attr('style','opacity:1')
+        $("ul#shows li").hide();  
+        targetLiEl.html(data);  
+        targetLi.fadeIn('slow'); 
+        hookupAddToCart();
+      }).error(function ( data ) {
+        loadingMessage.css('visibility', 'hidden')
+        errorMessage.css('display', 'block')
+        errorMessage.css('visibility', 'visible')
+      });
     });
   });
 

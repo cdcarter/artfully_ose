@@ -18,7 +18,7 @@
     %hr
     .row
       .span3
-        = render :partial => 'order_sidebar', :locals => { :order => child, :person => @person, :total => child.total }
+        = render :partial => 'order_sidebar', :locals => { :order => child, :person => @person, :total => child.total, :work_with => false }
       .span9
         - unless child.items.empty?
           = render :partial => 'item_table', :locals => { :order => child }

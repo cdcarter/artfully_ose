@@ -1,6 +1,7 @@
 class ParsedRow
   
   attr_accessor :row
+  attr_accessor :values_hash
 
   #Fields which require special parsing such as dollar amounts
   EXCEPTIONS = [:amount, :nongift_amount, :deductible_amount]
@@ -77,10 +78,18 @@ class ParsedRow
   end
   
   def initialize(headers, row)
+    @values_hash = HashWithIndifferentAccess.new    
     @headers = headers
+    @header_hash = {}
+    @headers.each_with_index { |header, index| @header_hash[header.to_s.downcase.strip] = index}
     @row = row
 
-    FIELDS.each do |field, columns|
+    downcased_fields = FIELDS
+    downcased_fields.each do |field, columns|
+      columns.map! {|column| column.downcase}
+    end
+
+    downcased_fields.each do |field, columns|
       columns.each do |column|
         load_value field, column
       end
@@ -88,7 +97,7 @@ class ParsedRow
   end
 
   def load_value(field, column)
-    index = @headers.index { |h| h.to_s.downcase.strip == column.downcase }
+    index = @header_hash[column]
     value = @row[index] if index
     exist = self.instance_variable_get("@#{field}")
 
@@ -96,11 +105,15 @@ class ParsedRow
       value = check_enumeration(field, value)
 
       self.instance_variable_set("@#{field}", value)
-      
-      #skip amount because we have to parse it
-      unless EXCEPTIONS.include? field
-        self.class.class_eval { attr_reader field }
-      end
+      @values_hash[field.to_s] = value
+    end
+  end
+
+  def method_missing(method_name, *args)
+    if @values_hash.has_key? method_name
+      @values_hash[method_name]
+    else
+      super
     end
   end
 
@@ -109,7 +122,7 @@ class ParsedRow
   end
 
   def check_enumeration(field, value)
-    if enum = ENUMERATIONS[field]      
+    if enum = ENUMERATIONS[field] 
       if index = enum.map(&:downcase).index(value.to_s.downcase)
         enum[index]
       else
@@ -156,6 +169,9 @@ class ParsedRow
     Hash[ADDRESS_FIELDS.keys.map{|k| [k, self.send(k)]}]
   end
   
+  #
+  # These are also used in person.update_from_import
+  #
   def person_attributes
       {
         :email           => self.email,

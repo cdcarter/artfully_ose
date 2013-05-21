@@ -19,6 +19,15 @@
           %td= door_list_item.ticket.section.name
           %td= door_list_item.payment_method
           %td= number_as_cents(door_list_item.ticket.sold_price)
-        %tr.no-border
-          %td
-          %td{:colspan => 6}= door_list_item.special_instructions
+        - if door_list_item.special_instructions.present?
+          %tr.no-border
+            %td
+            %td{:colspan => 6}
+              Special Instructions:
+              = door_list_item.special_instructions
+        - if door_list_item.notes.present?
+          %tr.no-border
+            %td
+            %td{:colspan => 6}
+              Notes:
+              = door_list_item.notes

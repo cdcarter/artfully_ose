@@ -1,20 +1,22 @@
 class DailyDonationReport
-  attr_accessor :rows, :donation_total, :date, :organization
+  attr_accessor :rows, :donation_total, :start_date, :organization
   extend ::ArtfullyOseHelper
 
   def initialize(organization, date=nil)
     @organization = organization
-    @date = date || 1.day.ago.to_date
-    @orders = organization.orders.csv_not_imported.after(@date).before(@date + 1.day) || []
+    @start_date = (date || 1.day.ago).in_time_zone(@organization.time_zone).midnight
+    @end_date = @start_date + 1.day
+    orders = organization.orders.includes(:person, :items)
+    orders = orders.csv_not_imported.after(@start_date).before(@end_date) || []
 
     @rows = []
-    @orders.each do |order|
+    orders.each do |order|
       @rows << Row.new(order) unless order.donations.empty?
     end
   end
 
   def total
-    DailyDonationReport.number_to_currency(@orders.sum{|o| o.donations.sum(&:total_price)}.to_f/100)
+    @rows.collect(&:order).sum{|o| o.donations.sum(&:total_price)}
   end
 
   def header
@@ -26,14 +28,15 @@ class DailyDonationReport
   end
 
   def footer
-    ["Total:", total, ""]
+    ["Total:", DailyDonationReport.number_to_currency(total / 100.0), ""]
   end
 
   class Row
-    attr_accessor :id, :total, :person, :person_id
+    attr_accessor :id, :total, :person, :person_id, :order
     def initialize(order)
       @id = order.id
-      @total = DailyDonationReport.number_to_currency(order.donations.sum(&:total_price).to_f/100)
+      @order = order
+      @total = DailyDonationReport.number_to_currency(order.donations.sum(&:total_price) / 100.0)
       @person = order.person
       @person_id = order.person.id
     end

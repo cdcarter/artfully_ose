@@ -4,12 +4,14 @@
 
 #donations-search
   = form_tag contributions_path, :method => :get, :class => 'well form-inline' do
-    = label_tag :start, "From", :class => "control-label"
-    = text_field_tag :start,"#{l @search.start, :format => :date_for_input}", :readonly => true, :class => 'datepicker input-small'
-    = label_tag :stop, "To", :class => "control-label"
-    = text_field_tag :stop, "#{l @search.stop, :format => :date_for_input}", :readonly => true, :class => 'datepicker input-small'
+    .pull-left
+      = label_tag :start, "From", :class => "control-label"
+      = text_field_tag :start,"#{l @search.start, :format => :date_for_input}", :readonly => true, :class => 'datepicker input-small'
+      = label_tag :stop, "To", :class => "control-label"
+      = text_field_tag :stop, "#{l @search.stop, :format => :date_for_input}", :readonly => true, :class => 'datepicker input-small'
     .pull-right
       = submit_tag "Search", :class => "btn"
+      = submit_tag "Download", :class => "btn"
 
 - unless @search.results.empty?
   #donations

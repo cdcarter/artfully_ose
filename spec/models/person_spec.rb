@@ -36,6 +36,79 @@ describe Person do
       subject.phones.length.should eq 2
     end
   end
+
+  describe "absorbing from an import" do
+    it "should copy any field where field is nil and absorbee.field is not nil" do
+      absorbee = FactoryGirl.build(:person, :first_name => "Jim", :linked_in_url => "http://www.linkedin.com")
+      person =   FactoryGirl.build(:person, :first_name => nil, :linked_in_url => nil)
+      person.update_from_import(absorbee)
+      person.first_name.should eq "Jim"
+      person.linked_in_url.should eq "http://www.linkedin.com"
+    end
+
+    it "should mark the import id" do
+      absorbee = FactoryGirl.build(:person, :first_name => "Jim")
+      person =   FactoryGirl.build(:person, :first_name => nil)
+      person.update_from_import(absorbee).import_id.should_not
+    end
+
+    it "should update the address if it does not exist" do
+      absorbee = FactoryGirl.build(:person)
+      person =   FactoryGirl.build(:person)
+      address = FactoryGirl.build(:address)
+      absorbee.address = address
+      person.update_from_import(absorbee)
+      person.address.should eq address
+    end
+
+    it "should not copy the id" do
+      absorbee = FactoryGirl.create(:person, :first_name => "Jim")
+      person =   FactoryGirl.create(:person, :first_name => nil)
+      expect {
+        person.update_from_import(absorbee)
+      }.to_not change {person.id}
+    end
+
+    it "should leave the absorbee unchanged" do
+      absorbee = FactoryGirl.build(:person, :first_name => "Jim")
+      person =   FactoryGirl.build(:person, :first_name => nil)
+      expect {
+        person.update_from_import(absorbee)
+      }.to_not change {absorbee}
+    end
+
+    it "should append the phones" do
+      absorbee = FactoryGirl.build(:person)
+      person =   FactoryGirl.build(:person)
+      absorbee.phones   << FactoryGirl.build(:phone)
+      person.phones     << FactoryGirl.build(:phone)
+      person.update_from_import(absorbee)
+      person.phones.length.should eq 2
+      person.phones.include?(absorbee.phones[0]).should be_true
+    end
+
+    it "should not append phones that already exist" do
+      absorbee = FactoryGirl.build(:person)
+      person =   FactoryGirl.build(:person)
+      phone = FactoryGirl.build(:phone)
+      absorbee.phones   << phone
+      person.phones     << phone
+      
+      expect {
+        person.update_from_import(absorbee)
+      }.to_not change {person.phones}
+    end
+
+    it "should append the tags" do
+      absorbee = FactoryGirl.build(:person, :first_name => "Jim")
+      person =   FactoryGirl.build(:person, :first_name => "Jim")
+      absorbee.tag_list << "One"
+      absorbee.tag_list << "Two"
+      person.tag_list   << "Three"
+      person.update_from_import(absorbee)
+      person.tag_list.should eq ["Three", "One", "Two"]
+    end
+  end
   
   describe "mergables" do
     
@@ -306,6 +379,26 @@ describe Person do
       subject.last_name = nil
       subject.email = nil
       subject.should_not be_valid
+    end
+  end
+
+  describe "the preferred way to first or initialize" do
+    let(:person)              { FactoryGirl.create(:person) }
+    let(:organization)        { person.organization }
+    let(:other_organization)  { FactoryGirl.create(:organization) }
+
+    it "should return a person if they exist" do
+      attrs = { :email => person.email, :organization_id => organization.id }
+      Person.should_not_receive(:new)
+      Person.should_not_receive(:create)
+      @existing_person = Person.first_or_initialize(attrs, {})
+      @existing_person.should eq person
+    end
+
+    it "should intialize a new person if the email is found but the organization is wrong" do
+      attrs = { :email => person.email, :organization_id => other_organization.id }
+      @existing_person = Person.first_or_initialize(attrs, {})
+      @existing_person.should be_new_record
     end
   end
 

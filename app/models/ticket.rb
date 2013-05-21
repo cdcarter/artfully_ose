@@ -62,9 +62,13 @@ class Ticket < ActiveRecord::Base
   end
 
   def self.to_sentence(tickets)
-    shows_string = tickets.map(&:show).uniq.length > 1 ? ", multiple shows" : " on " + I18n.localize(tickets.first.show.datetime_local_to_event, :format => :day_time_at)
-    events_string = tickets.map(&:show).map(&:event).uniq.length > 1 ? "multiple events" : tickets.first.show.event.name + shows_string
-    pluralize(tickets.length, "ticket") + " to " + events_string
+    if tickets.any?
+      shows_string = tickets.map(&:show).uniq.length > 1 ? ", multiple shows" : " on " + I18n.localize(tickets.first.show.datetime_local_to_event, :format => :day_time_at)
+      events_string = tickets.map(&:show).map(&:event).uniq.length > 1 ? "multiple events" : tickets.first.show.event.name + shows_string
+      pluralize(tickets.length, "ticket") + " to " + events_string
+    else
+      "No tickets"
+    end
   end
 
   def order_summary_description
@@ -97,7 +101,11 @@ class Ticket < ActiveRecord::Base
   end
   
   def special_instructions
-    sold_item.nil? ? nil : sold_item.order.special_instructions
+    sold_item.try(:order).try(:special_instructions)
+  end
+
+  def notes
+    sold_item.try(:order).try(:notes)
   end
 
   def self.fee

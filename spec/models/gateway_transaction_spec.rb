@@ -14,7 +14,7 @@ describe GatewayTransaction do
       @gateway_transaction.response.params["braintree_transaction"]["credit_card_details"]["bin"].should be_nil
     end
 
-    it "should not crash if braintree_transaction is nil" do      
+    it "should not crash if braintree_transaction is blank" do      
       @response = ActiveMerchant::Billing::Response.new(true, "", {})
 
       @gateway_transaction = GatewayTransaction.new
@@ -24,9 +24,17 @@ describe GatewayTransaction do
       @gateway_transaction.response.params["braintree_transaction"].should be_nil
     end
 
-    it "should not crash if gateway_transaction is blank" do 
+    it "should not crash if gateway_transaction is nil" do 
       @response = ActiveMerchant::Billing::Response.new(true, "", {})
       @response.should_receive(:params).and_return(nil)     
+      @gateway_transaction = GatewayTransaction.new
+      @gateway_transaction.response = @response
+      @gateway_transaction.clean
+    end
+
+    it "should not crash if braintree_transaction is nil" do 
+      @response = ActiveMerchant::Billing::Response.new(true, "", {})
+      @response.should_receive(:params).twice.and_return({"braintree_transaction" => nil})     
       @gateway_transaction = GatewayTransaction.new
       @gateway_transaction.response = @response
       @gateway_transaction.clean

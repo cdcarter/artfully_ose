@@ -293,7 +293,7 @@ class MailchimpKit < Kit
       next if !person.subscribed_lists.include?(list_id)
       say_action = SayAction.for_organization(organization)
       say_action.details = %{"#{data["subject"].truncate(25)}" delivered to #{list_name(list_id)} MailChimp list.}
-      say_action.occurred_at = occurred_at,
+      say_action.occurred_at = occurred_at
       say_action.subtype = "Email (Sent)"
       say_action.person = person
       say_action.save

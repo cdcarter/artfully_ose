@@ -35,6 +35,7 @@ group :test do
   gem "therubyracer", :require => 'v8'
   gem 'guard'
   gem 'guard-rspec'
+  gem 'guard-spork'
   gem 'rb-fsevent', '~> 0.9'
   gem 'launchy'
   gem 'awesome_print', :require => 'ap'

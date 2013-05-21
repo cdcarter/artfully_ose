@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130510191852) do
+ActiveRecord::Schema.define(:version => 20130425153848) do
 
   create_table "actions", :force => true do |t|
     t.integer  "organization_id"
@@ -27,8 +27,8 @@ ActiveRecord::Schema.define(:version => 20130510191852) do
     t.integer  "subject_id"
     t.string   "subject_type"
     t.integer  "creator_id"
-    t.integer  "import_id"
     t.datetime "deleted_at"
+    t.integer  "import_id"
   end
 
   add_index "actions", ["creator_id"], :name => "index_actions_on_creator_id"
@@ -79,11 +79,7 @@ ActiveRecord::Schema.define(:version => 20130510191852) do
     t.datetime "updated_at"
     t.string   "type"
     t.integer  "discount_id"
-    t.string   "token"
-    t.string   "reseller_id"
   end
-
-  add_index "carts", ["token"], :name => "index_carts_on_token", :unique => true
 
   create_table "charts", :force => true do |t|
     t.string  "name"
@@ -211,7 +207,7 @@ ActiveRecord::Schema.define(:version => 20130510191852) do
     t.integer  "realized_price"
     t.integer  "net"
     t.string   "fs_project_id"
-    t.integer  "nongift_amount",  :default => 0
+    t.integer  "nongift_amount"
     t.boolean  "is_noncash"
     t.boolean  "is_stock"
     t.boolean  "is_anonymous"
@@ -255,7 +251,6 @@ ActiveRecord::Schema.define(:version => 20130510191852) do
     t.datetime "updated_at"
     t.datetime "occurred_at"
     t.integer  "organization_id"
-    t.boolean  "starred",         :default => false
   end
 
   add_index "notes", ["organization_id"], :name => "index_notes_on_organization_id"
@@ -276,8 +271,9 @@ ActiveRecord::Schema.define(:version => 20130510191852) do
     t.string   "type"
     t.string   "payment_method"
     t.text     "special_instructions"
-    t.integer  "import_id"
     t.datetime "deleted_at"
+    t.integer  "import_id"
+    t.text     "notes"
   end
 
   add_index "orders", ["created_at"], :name => "index_orders_on_created_at"
@@ -315,8 +311,8 @@ ActiveRecord::Schema.define(:version => 20130510191852) do
     t.integer  "import_id"
     t.datetime "deleted_at"
     t.integer  "lifetime_value",     :default => 0
-    t.boolean  "do_not_email",       :default => false
     t.string   "salutation"
+    t.boolean  "do_not_email",       :default => false
     t.string   "title"
     t.text     "subscribed_lists"
     t.integer  "lifetime_donations", :default => 0

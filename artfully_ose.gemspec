@@ -53,7 +53,7 @@ Gem::Specification.new do |s|
   s.add_dependency "mail", "2.4.4"
   s.add_dependency "gibbon", "0.3.5"
   s.add_dependency "set_watch_for", "0.0.1"
-  s.add_dependency "swiper", "0.0.1"
+  s.add_dependency "swiper", "0.0.3"
   
   s.add_dependency "uuid", "2.3.5"
   s.add_dependency "geocoder"
