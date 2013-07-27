@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130425153848) do
+ActiveRecord::Schema.define(:version => 20130521183556) do
 
   create_table "actions", :force => true do |t|
     t.integer  "organization_id"
@@ -27,8 +27,8 @@ ActiveRecord::Schema.define(:version => 20130425153848) do
     t.integer  "subject_id"
     t.string   "subject_type"
     t.integer  "creator_id"
-    t.datetime "deleted_at"
     t.integer  "import_id"
+    t.datetime "deleted_at"
   end
 
   add_index "actions", ["creator_id"], :name => "index_actions_on_creator_id"
@@ -79,7 +79,10 @@ ActiveRecord::Schema.define(:version => 20130425153848) do
     t.datetime "updated_at"
     t.string   "type"
     t.integer  "discount_id"
+    t.string   "token"
   end
+
+  add_index "carts", ["token"], :name => "index_carts_on_token", :unique => true
 
   create_table "charts", :force => true do |t|
     t.string  "name"
@@ -179,6 +182,19 @@ ActiveRecord::Schema.define(:version => 20130425153848) do
     t.datetime "updated_at"
   end
 
+  create_table "import_messages", :force => true do |t|
+    t.integer  "import_id"
+    t.integer  "person_id"
+    t.integer  "row_number"
+    t.text     "row_data"
+    t.text     "message"
+    t.datetime "deleted_at"
+    t.datetime "created_at", :null => false
+    t.datetime "updated_at", :null => false
+  end
+
+  add_index "import_messages", ["import_id"], :name => "index_import_messages_on_import_id"
+
   create_table "import_rows", :force => true do |t|
     t.integer "import_id"
     t.text    "content"
@@ -207,7 +223,7 @@ ActiveRecord::Schema.define(:version => 20130425153848) do
     t.integer  "realized_price"
     t.integer  "net"
     t.string   "fs_project_id"
-    t.integer  "nongift_amount"
+    t.integer  "nongift_amount",  :default => 0
     t.boolean  "is_noncash"
     t.boolean  "is_stock"
     t.boolean  "is_anonymous"
@@ -251,6 +267,7 @@ ActiveRecord::Schema.define(:version => 20130425153848) do
     t.datetime "updated_at"
     t.datetime "occurred_at"
     t.integer  "organization_id"
+    t.boolean  "starred",         :default => false
   end
 
   add_index "notes", ["organization_id"], :name => "index_notes_on_organization_id"
@@ -271,8 +288,8 @@ ActiveRecord::Schema.define(:version => 20130425153848) do
     t.string   "type"
     t.string   "payment_method"
     t.text     "special_instructions"
-    t.datetime "deleted_at"
     t.integer  "import_id"
+    t.datetime "deleted_at"
     t.text     "notes"
   end
 
@@ -311,8 +328,8 @@ ActiveRecord::Schema.define(:version => 20130425153848) do
     t.integer  "import_id"
     t.datetime "deleted_at"
     t.integer  "lifetime_value",     :default => 0
-    t.string   "salutation"
     t.boolean  "do_not_email",       :default => false
+    t.string   "salutation"
     t.string   "title"
     t.text     "subscribed_lists"
     t.integer  "lifetime_donations", :default => 0
